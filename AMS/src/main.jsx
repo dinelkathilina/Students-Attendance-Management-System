@@ -6,6 +6,7 @@ import { ErrorPage } from "./ErrorPage.jsx";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { Lecture_Login } from "./routes/Lecture_Login";
 import { Lecture_Signup } from "./routes/Lecture_Signup";
+import { Lecture_Home } from "./routes/Lecture_Home";
 
 
 const router = createBrowserRouter([
@@ -22,6 +23,10 @@ const router = createBrowserRouter([
   {
     path: "/lecture_signup",
     element:<Lecture_Signup />,
+  },
+  {
+    path: "/lecture_home",
+    element:<Lecture_Home />,
   },
   
   
