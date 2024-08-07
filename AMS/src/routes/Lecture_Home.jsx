@@ -41,23 +41,23 @@ export const Lecture_Home = () => {
                 <span class="sr-only">Toggle sidebar</span>
               </button>
               <a
-                href="https://flowbite.com"
+                href="/"
                 class="flex items-center justify-between mr-4"
               >
                 <img
-                  src="https://flowbite.s3.amazonaws.com/logo.svg"
+                  src="presenT.svg"
                   class="mr-3 h-8"
                   alt="Flowbite Logo"
                 />
                 <span class="self-center text-2xl font-semibold whitespace-nowrap dark:text-white">
-                  Flowbite
+                  presenT
                 </span>
               </a>
 
             </div>
             <div class="flex items-center lg:order-2">
 
-              {/* Dropdown menu */}
+              {/* profile button with image */}
               <button
                 type="button"
                 class="flex mx-3 text-sm bg-gray-800 rounded-full md:mr-0 focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600"
@@ -72,7 +72,7 @@ export const Lecture_Home = () => {
                   alt="user photo"
                 />
               </button>
-              {/* Dropdown menu */}
+              {/* Dropdown menu in profile */}
               <div
                 class="hidden z-50 my-4 w-56 text-base list-none bg-white rounded divide-y divide-gray-100 shadow dark:bg-gray-700 dark:divide-gray-600 "
                 id="dropdown"
