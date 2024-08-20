@@ -3,7 +3,7 @@ import authService from "../services/authservice";
 import { useNavigate } from "react-router-dom";
 import { initFlowbite } from 'flowbite';
 
- export  const Lecture_Home = () => {
+export const Student_Home = () => {
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const navigate = useNavigate();
