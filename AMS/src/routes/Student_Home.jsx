@@ -93,7 +93,8 @@ export const Student_Home = () => {
                 <span class="sr-only">Open user menu</span>
                 <img
                   class="w-8 h-8 rounded-full"
-                  src="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/avatars/michael-gough.png"
+                  
+                  src="user.png"
                   alt="user photo"
                 />
               </button>

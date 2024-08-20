@@ -11,6 +11,7 @@ import {
   RouterProvider,
 } from "react-router-dom";
 import "./index.css";
+import { Signup } from "./routes/Signup";
 
 const router = createBrowserRouter([
   {
@@ -33,6 +34,10 @@ const router = createBrowserRouter([
         <Student_Home />
       </ProtectedRoute>
     ),
+  },
+  {
+    path: "/register",
+    element: <Signup />,
   }
 
 ]);

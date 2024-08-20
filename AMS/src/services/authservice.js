@@ -45,6 +45,20 @@ const authService = {
     return null;
   },
 
+  register: async (name, email, password, confirmPassword) => {
+    try {
+      const response = await axios.post(`${API_URL}/register`, {
+        name,
+        email,
+        password,
+        confirmPassword
+      });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
   // Add more auth-related functions as needed
 };
 
