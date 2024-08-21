@@ -1,37 +1,55 @@
 import { useState, useEffect } from "react";
 import authService from "../services/authservice";
 import { useNavigate } from "react-router-dom";
-import { initFlowbite } from 'flowbite';
+import { initFlowbite } from "flowbite";
 
- export  const Lecture_Home = () => {
+export const Lecture_Home = () => {
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
+  const [courses, setCourses] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchUserProfile = async () => {
+    const fetchData = async () => {
       try {
         const user = await authService.getProfile();
-        console.log("Fetched user profile:", user); // Debug log
         if (user) {
-          setUserName(user.name || "Student");
+          setUserName(user.name || "Lecturer");
           setUserEmail(user.email || "");
         } else {
           navigate("/");
+          return;
         }
+
+        const coursesData = await authService.getLecturerCourses();
+        setCourses(coursesData);
+        setIsLoading(false);
       } catch (error) {
-        console.error("Error fetching user profile:", error);
-        navigate("/");
+        console.error("Error fetching data:", error);
+        setError("Failed to load data. Please try again later.");
+        setIsLoading(false);
       }
     };
 
-    fetchUserProfile();
+    fetchData();
     initFlowbite();
   }, [navigate]);
 
   const handleLogout = () => {
     authService.logout();
     navigate("/");
+  };
+
+  const formatTime = (timeString) => {
+    const [hours, minutes] = timeString.split(':');
+    return new Date(0, 0, 0, hours, minutes).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const getDayName = (day) => {
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    return days[day];
   };
 
   return (
@@ -257,13 +275,64 @@ import { initFlowbite } from 'flowbite';
         </aside>
 
         <main class="p-4 md:ml-64 h-auto pt-20">
+
+        <div className="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 p-6 mb-4 bg-gray-50 dark:bg-gray-800">
+  <h2 className="text-3xl font-bold mb-6 text-gray-800 dark:text-white">Welcome, {userName}</h2>
+  
+  {isLoading ? (
+    <div className="text-center py-10">
+      <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-white"></div>
+      <p className="mt-2 text-gray-600 dark:text-gray-300">Loading...</p>
+    </div>
+  ) : error ? (
+    <div className="text-center py-10 text-red-500 dark:text-red-400">{error}</div>
+  ) : (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {courses.map((course) => (
+        <div key={course.courseId} className="bg-white dark:bg-gray-700 rounded-lg shadow-md p-6 transition-all duration-300 hover:shadow-lg">
+          <h3 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">{course.courseName}</h3>
+          
+          <div className="mb-6">
+            <h4 className="text-lg font-medium mb-3 text-gray-700 dark:text-gray-200">Upcoming Lectures</h4>
+            <ul className="space-y-2">
+              {course.upcomingLectures.length > 0 ? (
+                course.upcomingLectures.map((lecture, index) => (
+                  <li key={index} className="text-sm bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-200 py-2 px-3 rounded-md">
+                    <span className="font-medium">{getDayName(lecture.day)}</span>, {formatTime(lecture.startTime)} - {formatTime(lecture.endTime)}
+                  </li>
+                ))
+              ) : (
+                <li className="text-sm text-gray-500 dark:text-gray-400 italic">No upcoming lectures</li>
+              )}
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="text-lg font-medium mb-3 text-gray-700 dark:text-gray-200">Earlier Lectures</h4>
+            <ul className="space-y-2">
+              {course.earlierLectures.length > 0 ? (
+                course.earlierLectures.map((lecture, index) => (
+                  <li key={index} className="text-sm bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300 py-2 px-3 rounded-md">
+                    <span className="font-medium">{getDayName(lecture.day)}</span>, {formatTime(lecture.startTime)} - {formatTime(lecture.endTime)}
+                  </li>
+                ))
+              ) : (
+                <li className="text-sm text-gray-500 dark:text-gray-400 italic">No earlier lectures</li>
+              )}
+            </ul>
+          </div>
+        </div>
+      ))}
+    </div>
+  )}
+</div>
+
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
             <div class="border-2 border-dashed border-gray-300 rounded-lg dark:border-gray-600 h-32 md:h-64"></div>
             <div class="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 h-32 md:h-64"></div>
             <div class="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 h-32 md:h-64"></div>
             <div class="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 h-32 md:h-64"></div>
           </div>
-          <div class="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 h-96 mb-4"></div>
           <div class="grid grid-cols-2 gap-4 mb-4">
             <div class="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 h-48 md:h-72"></div>
             <div class="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 h-48 md:h-72"></div>

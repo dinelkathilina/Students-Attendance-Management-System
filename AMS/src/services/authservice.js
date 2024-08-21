@@ -58,6 +58,22 @@ const authService = {
       throw error;
     }
   },
+  
+  getLecturerCourses: async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return null;
+
+    try {
+      const response = await axios.get(`${API_URL}/api/lecturer/courses`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching lecturer courses:', error);
+      throw error;
+    }
+  },
+
 
   // Add more auth-related functions as needed
 };
