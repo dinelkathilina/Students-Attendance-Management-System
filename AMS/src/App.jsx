@@ -1,14 +1,16 @@
 import 'flowbite';
-import Header from './Header';
-import { Footer } from './Footer';
-import { Content } from './Content';
-
+import { useEffect } from 'react';
+import { Outlet } from 'react-router-dom';
+import 'flowbite/dist/flowbite.min.css';
 function App() {
 
-
+  useEffect(() => {
+    initFlowbite();
+    
+  }, []);
   return (
     <>
-    
+    <Outlet />
     </>
   )
 }

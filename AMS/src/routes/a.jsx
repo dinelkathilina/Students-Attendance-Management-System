@@ -1,55 +1,7 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import CustomDatePicker from "../Components/CustomDatePicker";
-import QRCode from "qrcode.react";
+<main class="p-4 md:ml-64 h-auto pt-20">
 
-export const Createsession = () => {
-  const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    course: "",
-    date: "",
-    startTime: "",
-    endTime: "",
-    lectureHall: "",
-  });
-  const [sessionCode, setSessionCode] = useState("");
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: value,
-    }));
-  };
-
-  const handleDateChange = (date) => {
-    setFormData((prevData) => ({
-      ...prevData,
-      date: date,
-    }));
-  };
-
-  const generateSessionCode = () => {
-    const { course, date, startTime, endTime, lectureHall } = formData;
-    const randomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-    return `${course}-${date}-${startTime}-${endTime}-${lectureHall}-${randomCode}`;
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const code = generateSessionCode();
-    setSessionCode(code);
-    console.log("Form submitted with data:", formData);
-    console.log("Generated session code:", code);
-    // Here you would typically send the data to your backend
-  };
-
-  return (
-    <div className="flex-1 bg-gray-900 text-white p-6 overflow-auto">
-      
-        {/* <div className="bg-gray-800 rounded-lg p-6"> */}
-        <div class="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 h-96 mb-4">
-          <h2 className="text-2xl font-bold mb-6 text-center">Create Session</h2>
+<div class="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 h-96 mb-4">
+<h2 className="text-2xl font-bold mb-6 text-center">Create Session</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="course" className="block text-sm font-medium mb-1">
@@ -139,9 +91,10 @@ export const Createsession = () => {
               Create Session
             </button>
           </form>
-        </div>
-       
-        {sessionCode && (
+</div>
+
+<div class="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 h-96 mb-4">
+{sessionCode && (
           <div className="bg-gray-800 rounded-lg p-6 text-center">
             <h3 className="text-lg font-semibold mb-2">Session Code:</h3>
             <p className="mb-4 break-all">{sessionCode}</p>
@@ -150,7 +103,6 @@ export const Createsession = () => {
             </div>
           </div>
         )}
-      
-    </div>
-  );
-};
+</div>
+
+</main>
