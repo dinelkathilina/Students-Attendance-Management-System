@@ -1,8 +1,7 @@
-import React, { useState } from "react";
+import React, { useState , useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import CustomDatePicker from "../Components/CustomDatePicker";
-import QRCode from "qrcode.react";
-
+import QRCode from "qrcode";
 export const Createsession = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -43,6 +42,47 @@ export const Createsession = () => {
     console.log("Generated session code:", code);
     // Here you would typically send the data to your backend
   };
+
+  const openLargeQRCodeInNewTab = useCallback(() => {
+    const canvas = document.createElement('canvas');
+    QRCode.toCanvas(canvas, sessionCode, {
+      width: 1000,
+      height: 1000,
+      color: {
+        dark: '#FFF',
+        light: '#1a202c'
+      }
+    }, (error) => {
+      if (error) console.error(error);
+      const dataUrl = canvas.toDataURL('image/png');
+      const newTab = window.open();
+      newTab.document.write(`
+        <html>
+          <head>
+            <title>Large QR Code for Session: ${sessionCode}</title>
+            <style>
+              body {
+                margin: 0;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                background-color: #1a202c;
+              }
+              img {
+                max-width: 90vmin;
+                max-height: 90vmin;
+              }
+            </style>
+          </head>
+          <body>
+            <img src="${dataUrl}" alt="Large QR Code">
+          </body>
+        </html>
+      `);
+      newTab.document.close();
+    });
+  }, [sessionCode]);
 
   return (
 <div className="flex flex-col h-full bg-gray-900 overflow-y-auto">
@@ -145,8 +185,26 @@ export const Createsession = () => {
             <div className="bg-gray-900 p-6 text-center">
               <h3 className="text-lg font-semibold mb-2 text-white">Session Code:</h3>
               <p className="mb-4 break-all text-white">{sessionCode}</p>
-              <div className="flex justify-center">
-                <QRCode value={sessionCode} size={200} bgColor="transparent" fgColor="white" />
+              <div className="flex flex-col items-center">
+                <canvas ref={el => {
+                  if (el) {
+                    QRCode.toCanvas(el, sessionCode, {
+                      width: 200,
+                      color: {
+                        dark: '#FFF',
+                        light: '#1a202c'
+                      }
+                    }, error => {
+                      if (error) console.error(error)
+                    })
+                  }
+                }} />
+                <button
+                  onClick={openLargeQRCodeInNewTab}
+                  className="mt-4 p-2 bg-blue-600 hover:bg-blue-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800 text-white"
+                >
+                  Open Large QR Code
+                </button>
               </div>
             </div>
           )}
