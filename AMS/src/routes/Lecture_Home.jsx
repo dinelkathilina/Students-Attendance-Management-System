@@ -204,8 +204,8 @@ export const Lecture_Home = () => {
               </li>
               {/* Manage Courses */}
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="manage_courses"
                   class="flex items-center p-2 text-base font-medium text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group"
                 >
                   <svg
@@ -225,7 +225,7 @@ export const Lecture_Home = () => {
                   </svg>
 
                   <span class="ml-3">Manage Courses</span>
-                </a>
+                </Link>
               </li>
               {/* Attendance Report */}
               <li>

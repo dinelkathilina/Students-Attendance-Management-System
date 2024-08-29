@@ -106,3 +106,129 @@
 </div>
 
 </main>
+
+
+// Modal
+{isModalOpen && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+    <div className="bg-white p-8 rounded-lg w-full max-w-md">
+      <h2 className="text-2xl font-bold mb-4">
+        {editingCourse ? "Edit Course" : "Add New Course"}
+      </h2>
+      {/* <form onSubmit={handleSubmit}>
+        <div className="space-y-4">
+          <div>
+            <label
+              htmlFor="courseName"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Course Name
+            </label>
+            <input
+              id="courseName"
+              name="courseName"
+              type="text"
+              value={formData.courseName}
+              onChange={handleInputChange}
+              required
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="courseId"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Course ID
+            </label>
+            <input
+              id="courseId"
+              name="courseId"
+              type="text"
+              value={formData.courseId}
+              onChange={handleInputChange}
+              required
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label
+                htmlFor="startTime"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Start Time
+              </label>
+              <input
+                id="startTime"
+                name="startTime"
+                type="time"
+                value={formData.startTime}
+                onChange={handleInputChange}
+                required
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="endTime"
+                className="block text-sm font-medium text-gray-700"
+              >
+                End Time
+              </label>
+              <input
+                id="endTime"
+                name="endTime"
+                type="time"
+                value={formData.endTime}
+                onChange={handleInputChange}
+                required
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+              />
+            </div>
+          </div>
+          <div>
+            <label
+              htmlFor="day"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Day
+            </label>
+            <select
+              id="day"
+              name="day"
+              value={formData.day}
+              onChange={handleInputChange}
+              required
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+            >
+              <option value="">Select a day</option>
+              <option value="Monday">Monday</option>
+              <option value="Tuesday">Tuesday</option>
+              <option value="Wednesday">Wednesday</option>
+              <option value="Thursday">Thursday</option>
+              <option value="Friday">Friday</option>
+            </select>
+          </div>
+        </div>
+        <div className="mt-6 flex justify-end space-x-2">
+          <button
+            type="button"
+            onClick={() => setIsModalOpen(false)}
+            className="text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800"
+          >
+            Save
+          </button>
+        </div>
+      </form> */}
+    </div>
+    
+
+  </div>
+)}

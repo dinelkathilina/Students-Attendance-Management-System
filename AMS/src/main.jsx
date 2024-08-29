@@ -15,6 +15,7 @@ import {
 } from "react-router-dom";
 import "./index.css";
 import { Signup } from "./routes/Signup";
+import  ManageCourses  from "./routes/ManageCourses";
 
 
 const router = createBrowserRouter([
@@ -38,6 +39,10 @@ const router = createBrowserRouter([
           {
             path: "create_session",
             element: <Createsession />,
+          },
+          {
+            path: "manage_courses",
+            element:<ManageCourses />,
           },
         ],
       },
