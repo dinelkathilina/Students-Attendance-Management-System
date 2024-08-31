@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_URL = 'https://localhost:7243'; 
+const API_URL = 'https://dinelka-bzfwczdedbagcter.southeastasia-01.azurewebsites.net/'; 
+ //const API_URL = 'https://localhost:7243'; 
 
 const authService = {
 
