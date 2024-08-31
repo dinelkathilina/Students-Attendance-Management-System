@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import authService from "../Services/authservice";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { initFlowbite } from "flowbite";
-
+import CourseScheduleDisplay from '../Components/CourseScheduleDisplay'
 export const Lecture_Home = () => {
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
@@ -36,13 +36,10 @@ export const Lecture_Home = () => {
     };
     fetchData();
     initFlowbite();
-    
+
     // Set showCoursesTimes based on the current path
-    setShowCoursesTimes(location.pathname === "/lecture_home")
-
-  }, [navigate,location.pathname]);
-
-  
+    setShowCoursesTimes(location.pathname === "/lecture_home");
+  }, [navigate, location.pathname]);
 
   const handleLogout = () => {
     authService.logout();
@@ -50,12 +47,23 @@ export const Lecture_Home = () => {
   };
 
   const formatTime = (timeString) => {
-    const [hours, minutes] = timeString.split(':');
-    return new Date(0, 0, 0, hours, minutes).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const [hours, minutes] = timeString.split(":");
+    return new Date(0, 0, 0, hours, minutes).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
 
   const getDayName = (day) => {
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const days = [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+    ];
     return days[day];
   };
 
@@ -179,10 +187,9 @@ export const Lecture_Home = () => {
 
               <li>
                 <Link
-                to="create_session"
-                  
+                  to="create_session"
                   class="flex items-center p-2 text-base font-medium text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group"
-                  >
+                >
                   <svg
                     class="w-6 h-6 text-gray-800 dark:text-white"
                     aria-hidden="true"
@@ -191,12 +198,12 @@ export const Lecture_Home = () => {
                     height="24"
                     fill="currentColor"
                     viewBox="0 0 24 24"
-                    >
+                  >
                     <path
                       fill-rule="evenodd"
                       d="M2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10S2 17.523 2 12Zm11-4.243a1 1 0 1 0-2 0V11H7.757a1 1 0 1 0 0 2H11v3.243a1 1 0 1 0 2 0V13h3.243a1 1 0 1 0 0-2H13V7.757Z"
                       clip-rule="evenodd"
-                      />
+                    />
                   </svg>
 
                   <span class="ml-3">Create Session</span>
@@ -229,8 +236,8 @@ export const Lecture_Home = () => {
               </li>
               {/* Attendance Report */}
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="report"
                   class="flex items-center p-2 text-base font-medium text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group"
                 >
                   <svg
@@ -252,12 +259,12 @@ export const Lecture_Home = () => {
                   </svg>
 
                   <span class="ml-3">Attendance Report</span>
-                </a>
+                </Link>
               </li>
               {/* Course Schedules */}
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="course_schedules"
                   class="flex items-center p-2 text-base font-medium text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group"
                 >
                   <svg
@@ -277,74 +284,25 @@ export const Lecture_Home = () => {
                   </svg>
 
                   <span class="ml-3">Course Schedules</span>
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
         </aside>
 
-        <main class="p-4 md:ml-64 h-screen pt-20">
-        {showCoursesTimes ? (
-                  <div className="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 p-6 mb-4 bg-gray-50 dark:bg-gray-800">
-                  <h2 className="text-3xl font-bold mb-6 text-gray-800 dark:text-white">Welcome, {userName}</h2>
-                  
-                  {isLoading ? (
-                    <div className="text-center py-10">
-                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-white"></div>
-                      <p className="mt-2 text-gray-600 dark:text-gray-300">Loading...</p>
-                    </div>
-                  ) : error ? (
-                    <div className="text-center py-10 text-red-500 dark:text-red-400">{error}</div>
-                  ) : (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      {courses.map((course) => (
-                        <div key={course.courseId} className="bg-white dark:bg-gray-700 rounded-lg shadow-md p-6 transition-all duration-300 hover:shadow-lg">
-                          <h3 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">{course.courseName}</h3>
-                          
-                          <div className="mb-6">
-                            <h4 className="text-lg font-medium mb-3 text-gray-700 dark:text-gray-200">Upcoming Lectures</h4>
-                            <ul className="space-y-2">
-                              {course.upcomingLectures.length > 0 ? (
-                                course.upcomingLectures.map((lecture, index) => (
-                                  <li key={index} className="text-sm bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-200 py-2 px-3 rounded-md">
-                                    <span className="font-medium">{getDayName(lecture.day)}</span>, {formatTime(lecture.startTime)} - {formatTime(lecture.endTime)}
-                                  </li>
-                                ))
-                              ) : (
-                                <li className="text-sm text-gray-500 dark:text-gray-400 italic">No upcoming lectures</li>
-                              )}
-                            </ul>
-                          </div>
-                
-                          <div>
-                            <h4 className="text-lg font-medium mb-3 text-gray-700 dark:text-gray-200">Earlier Lectures</h4>
-                            <ul className="space-y-2">
-                              {course.earlierLectures.length > 0 ? (
-                                course.earlierLectures.map((lecture, index) => (
-                                  <li key={index} className="text-sm bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300 py-2 px-3 rounded-md">
-                                    <span className="font-medium">{getDayName(lecture.day)}</span>, {formatTime(lecture.startTime)} - {formatTime(lecture.endTime)}
-                                  </li>
-                                ))
-                              ) : (
-                                <li className="text-sm text-gray-500 dark:text-gray-400 italic">No earlier lectures</li>
-                              )}
-                            </ul>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                      </div>
-        ):(
-          <Outlet />
-        )}
-
-
-          
-          
-          {/* <div class="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 h-screen mb-4"></div> */}
-          {/* <div class="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 h-96 mb-4"></div> */}
-          
+        <main className="p-4 md:ml-64 h-screen pt-20">
+          {showCoursesTimes ? (
+            <CourseScheduleDisplay
+              courses={courses}
+              isLoading={isLoading}
+              error={error}
+              userName={userName}
+              getDayName={getDayName}
+              formatTime={formatTime}
+            />
+          ) : (
+            <Outlet />
+          )}
         </main>
       </div>
     </>

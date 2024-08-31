@@ -16,6 +16,8 @@ import {
 import "./index.css";
 import { Signup } from "./routes/Signup";
 import  ManageCourses  from "./routes/ManageCourses";
+import { Report } from "./routes/Report";
+import { CourseSchedules } from "./routes/CourseSchedules";
 
 
 const router = createBrowserRouter([
@@ -43,6 +45,14 @@ const router = createBrowserRouter([
           {
             path: "manage_courses",
             element:<ManageCourses />,
+          },
+          {
+            path: "report",
+            element:<Report />,
+          },
+          {
+            path: "course_schedules",
+            element:<CourseSchedules />,
           },
         ],
       },
