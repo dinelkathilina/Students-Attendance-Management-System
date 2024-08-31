@@ -25,7 +25,7 @@ export const Lecture_Home = () => {
           return;
         }
 
-        const coursesData = await authService.getLecturerCourses();
+        const coursesData = await authService.getLecturerCoursesTime();
         setCourses(coursesData);
         setIsLoading(false);
       } catch (error) {

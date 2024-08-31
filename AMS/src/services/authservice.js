@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-const API_URL = 'https://dinelka-bzfwczdedbagcter.southeastasia-01.azurewebsites.net/'; 
- //const API_URL = 'https://localhost:7243'; 
+//const API_URL = 'https://dinelka-bzfwczdedbagcter.southeastasia-01.azurewebsites.net/'; 
+ const API_URL = 'https://localhost:7243'; 
 
 const authService = {
 
@@ -61,6 +61,35 @@ const authService = {
   },
   
   getLecturerCourses: async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return null;
+
+    try {
+      const response = await axios.get(`${API_URL}/api/session/courses`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching lecturer courses:', error);
+      throw error;
+    }
+  },
+
+  getLectureHalls: async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return null;
+
+    try {
+      const response = await axios.get(`${API_URL}/api/session/lecture-halls`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching lecture halls:', error);
+      throw error;
+    }
+  },
+  getLecturerCoursesTime: async () => {
     const token = localStorage.getItem('token');
     if (!token) return null;
 

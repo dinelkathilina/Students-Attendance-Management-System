@@ -16,7 +16,7 @@ export const CourseSchedules = () => {
           setUserName(user.name || "Lecturer");
         }
 
-        const coursesData = await authService.getLecturerCourses();
+        const coursesData = await authService.getLecturerCoursesTime();
         setCourses(coursesData);
         setIsLoading(false);
       } catch (error) {
@@ -50,20 +50,15 @@ export const CourseSchedules = () => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-gray-900 overflow-y-auto">
-      <div className="flex-grow flex items-start justify-center p-4">
-        <div className="container mx-2 p-6">
-          <h1 className="text-3xl text-white font-bold mb-6">Course Schedules</h1>
-          <CourseScheduleDisplay
-            courses={courses}
-            isLoading={isLoading}
-            error={error}
-            userName={userName}
-            getDayName={getDayName}
-            formatTime={formatTime}
-          />
-        </div>
-      </div>
-    </div>
+    <CourseScheduleDisplay
+      courses={courses}
+      isLoading={isLoading}
+      error={error}
+      userName={userName}
+      getDayName={getDayName}
+      formatTime={formatTime}
+    />
   );
 };
+
+export default CourseSchedules;
