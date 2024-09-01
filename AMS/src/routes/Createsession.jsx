@@ -11,10 +11,13 @@ export const Createsession = () => {
     startTime: "",
     endTime: "",
     lectureHall: "",
+    expirationMinutes: 5, // Default expiration time
   });
   const [sessionCode, setSessionCode] = useState("");
   const [courses, setCourses] = useState([]);
   const [lectureHalls, setLectureHalls] = useState([]);
+  const [isSessionActive, setIsSessionActive] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState(0);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -33,6 +36,20 @@ export const Createsession = () => {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    let timer;
+    if (isSessionActive && timeRemaining > 0) {
+      timer = setInterval(() => {
+        setTimeRemaining((prevTime) => prevTime - 1);
+      }, 1000);
+    } else if (timeRemaining === 0) {
+      setIsSessionActive(false);
+      setSessionCode("");
+    }
+
+    return () => clearInterval(timer);
+  }, [isSessionActive, timeRemaining]);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({
@@ -49,13 +66,35 @@ export const Createsession = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const code = generateSessionCode();
-    setSessionCode(code);
-    console.log("Form submitted with data:", formData);
-    console.log("Generated session code:", code);
-    // Here you would typically send the data to your backend
+    if (isSessionActive) {
+      alert("A session is already active. Please wait for it to expire.");
+      return;
+    }
+  
+    try {
+      const creationTime = new Date(`${formData.date}T${formData.startTime}`);
+      const expirationTime = new Date(creationTime.getTime() + formData.expirationMinutes * 60000);
+      const generatedSessionCode = generateSessionCode();
+  
+      const sessionData = {
+        courseID: parseInt(formData.course, 10), // Ensure courseID is an integer
+        lectureHallID: parseInt(formData.lectureHall, 10), // Ensure lectureHallID is an integer
+        creationTime: creationTime.toISOString(),
+        sessionCode: generatedSessionCode,
+        expirationTime: expirationTime.toISOString()
+      };
+  
+      console.log("Sending session data:", sessionData); // Log the data being sent
+  
+      const response = await authService.createSession(sessionData);
+      setSessionCode(response.sessionCode);
+      setIsSessionActive(true);
+      setTimeRemaining(formData.expirationMinutes * 60);
+    } catch (error) {
+      console.error("Error creating session:", error);
+      alert("Failed to create session. Please try again.");
+    }
   };
-
   const openLargeQRCodeInNewTab = useCallback(() => {
     const canvas = document.createElement("canvas");
     QRCode.toCanvas(
@@ -101,6 +140,12 @@ export const Createsession = () => {
       }
     );
   }, [sessionCode]);
+
+  const formatTime = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+  };
 
   return (
     <div className="flex flex-col h-full bg-gray-900 overflow-y-auto">
@@ -213,11 +258,32 @@ export const Createsession = () => {
                 </select>
               </div>
 
+              <div>
+                <label
+                  htmlFor="expirationMinutes"
+                  className="block text-sm font-medium text-gray-300 mb-1"
+                >
+                  Expiration Time (minutes)
+                </label>
+                <input
+                  type="number"
+                  id="expirationMinutes"
+                  name="expirationMinutes"
+                  value={formData.expirationMinutes}
+                  onChange={handleInputChange}
+                  min="1"
+                  max="60"
+                  className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+
               <button
                 type="submit"
                 className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 rounded-md font-medium text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800"
+                disabled={isSessionActive}
               >
-                Create Session
+                {isSessionActive ? "Session Active" : "Create Session"}
               </button>
             </form>
           </div>
@@ -228,6 +294,9 @@ export const Createsession = () => {
                 Session Code:
               </h3>
               <p className="mb-4 break-all text-white">{sessionCode}</p>
+              <p className="mb-4 text-white">
+                Time Remaining: {formatTime(timeRemaining)}
+              </p>
               <div className="flex flex-col items-center">
                 <canvas
                   ref={(el) => {

@@ -104,6 +104,21 @@ const authService = {
     }
   },
 
+  createSession: async (sessionData) => {
+    const token = localStorage.getItem('token');
+    if (!token) return null;
+
+    try {
+      const response = await axios.post(`${API_URL}/api/session/create`, sessionData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error creating session:', error);
+      throw error;
+    }
+  },
+
 
   // Add more auth-related functions as needed
 };
