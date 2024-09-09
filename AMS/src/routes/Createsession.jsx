@@ -7,7 +7,8 @@ import { useSession } from "../Context/SessionContext";
 export const Createsession = () => {
 
   const navigate = useNavigate();
-  const { sessionData, startSession, updateRemainingTime } = useSession();
+  const { sessionData, startSession, endSession } = useSession();
+  const isSessionActive = sessionData && sessionData.timeRemaining > 0;
   const [formData, setFormData] = useState({
     course: "",
     date: new Date().toISOString().split("T")[0],
@@ -35,17 +36,10 @@ export const Createsession = () => {
   }, []);
 
   useEffect(() => {
-    let timer;
-    if (sessionData && sessionData.timeRemaining > 0) {
-      timer = setInterval(() => {
-        updateRemainingTime(sessionData.timeRemaining - 1);
-      }, 1000);
-    } else if (sessionData && sessionData.timeRemaining === 0) {
-      startSession(null);
+    if (sessionData && sessionData.timeRemaining <= 0) {
+      endSession();
     }
-
-    return () => clearInterval(timer);
-  }, [sessionData, updateRemainingTime, startSession]);
+  }, [sessionData, endSession]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -73,18 +67,19 @@ export const Createsession = () => {
       const expirationTime = new Date(creationTime.getTime() + formData.expirationMinutes * 60000);
       const generatedSessionCode = generateSessionCode();
   
-      const sessionData = {
+      const newSessionData = {
         courseID: parseInt(formData.course, 10),
         lectureHallID: parseInt(formData.lectureHall, 10),
         creationTime: creationTime.toISOString(),
         sessionCode: generatedSessionCode,
-        expirationTime: expirationTime.toISOString()
+        expirationTime: expirationTime.toISOString(),
+        timeRemaining: formData.expirationMinutes * 60 // Add this line
       };
   
-      const response = await authService.createSession(sessionData);
+      const response = await authService.createSession(newSessionData);
       startSession({
+        ...newSessionData,
         sessionCode: response.sessionCode,
-        timeRemaining: formData.expirationMinutes * 60,
       });
     } catch (error) {
       console.error("Error creating session:", error);
@@ -279,14 +274,14 @@ export const Createsession = () => {
               <button
                 type="submit"
                 className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 rounded-md font-medium text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800"
-                disabled={sessionData !== null}
+                disabled={isSessionActive}
               >
                 {sessionData ? "Session Active" : "Create Session"}
               </button>
             </form>
           </div>
 
-          {sessionData && (
+          {isSessionActive && (
             <div className="bg-gray-900 p-6 text-center">
               <h3 className="text-lg font-semibold mb-2 text-white">
                 Session Code:
