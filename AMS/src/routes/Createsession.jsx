@@ -1,35 +1,33 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-
 import QRCode from "qrcode";
 import authService from "../Services/authservice";
+import { useSession } from "../Context/SessionContext";
+
 export const Createsession = () => {
+
   const navigate = useNavigate();
+  const { sessionData, startSession, updateRemainingTime } = useSession();
   const [formData, setFormData] = useState({
     course: "",
     date: new Date().toISOString().split("T")[0],
     startTime: "",
     endTime: "",
     lectureHall: "",
-    expirationMinutes: 5, // Default expiration time
+    expirationMinutes: 5,
   });
-  const [sessionCode, setSessionCode] = useState("");
   const [courses, setCourses] = useState([]);
   const [lectureHalls, setLectureHalls] = useState([]);
-  const [isSessionActive, setIsSessionActive] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState(0);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const coursesData = await authService.getLecturerCourses();
         setCourses(coursesData);
-
         const lectureHallsData = await authService.getLectureHalls();
         setLectureHalls(lectureHallsData);
       } catch (error) {
         console.error("Error fetching data:", error);
-        // Handle error (e.g., show error message to user)
       }
     };
 
@@ -38,17 +36,16 @@ export const Createsession = () => {
 
   useEffect(() => {
     let timer;
-    if (isSessionActive && timeRemaining > 0) {
+    if (sessionData && sessionData.timeRemaining > 0) {
       timer = setInterval(() => {
-        setTimeRemaining((prevTime) => prevTime - 1);
+        updateRemainingTime(sessionData.timeRemaining - 1);
       }, 1000);
-    } else if (timeRemaining === 0) {
-      setIsSessionActive(false);
-      setSessionCode("");
+    } else if (sessionData && sessionData.timeRemaining === 0) {
+      startSession(null);
     }
 
     return () => clearInterval(timer);
-  }, [isSessionActive, timeRemaining]);
+  }, [sessionData, updateRemainingTime, startSession]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -66,7 +63,7 @@ export const Createsession = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (isSessionActive) {
+    if (sessionData) {
       alert("A session is already active. Please wait for it to expire.");
       return;
     }
@@ -77,29 +74,30 @@ export const Createsession = () => {
       const generatedSessionCode = generateSessionCode();
   
       const sessionData = {
-        courseID: parseInt(formData.course, 10), // Ensure courseID is an integer
-        lectureHallID: parseInt(formData.lectureHall, 10), // Ensure lectureHallID is an integer
+        courseID: parseInt(formData.course, 10),
+        lectureHallID: parseInt(formData.lectureHall, 10),
         creationTime: creationTime.toISOString(),
         sessionCode: generatedSessionCode,
         expirationTime: expirationTime.toISOString()
       };
   
-      console.log("Sending session data:", sessionData); // Log the data being sent
-  
       const response = await authService.createSession(sessionData);
-      setSessionCode(response.sessionCode);
-      setIsSessionActive(true);
-      setTimeRemaining(formData.expirationMinutes * 60);
+      startSession({
+        sessionCode: response.sessionCode,
+        timeRemaining: formData.expirationMinutes * 60,
+      });
     } catch (error) {
       console.error("Error creating session:", error);
       alert("Failed to create session. Please try again.");
     }
   };
+
   const openLargeQRCodeInNewTab = useCallback(() => {
+    if (!sessionData) return;
     const canvas = document.createElement("canvas");
     QRCode.toCanvas(
       canvas,
-      sessionCode,
+      sessionData.sessionCode,
       {
         width: 1000,
         height: 1000,
@@ -115,7 +113,7 @@ export const Createsession = () => {
         newTab.document.write(`
         <html>
           <head>
-            <title>Large QR Code for Session: ${sessionCode}</title>
+            <title>Large QR Code for Session: ${sessionData.sessionCode}</title>
             <style>
               body {
                 margin: 0;
@@ -139,7 +137,7 @@ export const Createsession = () => {
         newTab.document.close();
       }
     );
-  }, [sessionCode]);
+  }, [sessionData]);
 
   const formatTime = (seconds) => {
     const minutes = Math.floor(seconds / 60);
@@ -281,29 +279,29 @@ export const Createsession = () => {
               <button
                 type="submit"
                 className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 rounded-md font-medium text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800"
-                disabled={isSessionActive}
+                disabled={sessionData !== null}
               >
-                {isSessionActive ? "Session Active" : "Create Session"}
+                {sessionData ? "Session Active" : "Create Session"}
               </button>
             </form>
           </div>
 
-          {sessionCode && (
+          {sessionData && (
             <div className="bg-gray-900 p-6 text-center">
               <h3 className="text-lg font-semibold mb-2 text-white">
                 Session Code:
               </h3>
-              <p className="mb-4 break-all text-white">{sessionCode}</p>
+              <p className="mb-4 break-all text-white">{sessionData.sessionCode}</p>
               <p className="mb-4 text-white">
-                Time Remaining: {formatTime(timeRemaining)}
+                Time Remaining: {formatTime(sessionData.timeRemaining)}
               </p>
               <div className="flex flex-col items-center">
-                <canvas
+              <canvas
                   ref={(el) => {
-                    if (el) {
+                    if (el && sessionData) {
                       QRCode.toCanvas(
                         el,
-                        sessionCode,
+                        sessionData.sessionCode,
                         {
                           width: 200,
                           color: {
