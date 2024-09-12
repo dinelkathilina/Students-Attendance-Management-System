@@ -1,15 +1,17 @@
 import { useState, useEffect } from "react";
 import authService from "../Services/authservice";
-import { useNavigate } from "react-router-dom";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { initFlowbite } from "flowbite";
-
+import CourseScheduleDisplay from '../Components/CourseScheduleDisplay'
 export const Lecture_Home = () => {
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [courses, setCourses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showCoursesTimes, setShowCoursesTimes] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -23,7 +25,7 @@ export const Lecture_Home = () => {
           return;
         }
 
-        const coursesData = await authService.getLecturerCourses();
+        const coursesData = await authService.getLecturerCoursesTime();
         setCourses(coursesData);
         setIsLoading(false);
       } catch (error) {
@@ -32,10 +34,12 @@ export const Lecture_Home = () => {
         setIsLoading(false);
       }
     };
-
     fetchData();
     initFlowbite();
-  }, [navigate]);
+
+    // Set showCoursesTimes based on the current path
+    setShowCoursesTimes(location.pathname === "/lecture_home");
+  }, [navigate, location.pathname]);
 
   const handleLogout = () => {
     authService.logout();
@@ -43,12 +47,23 @@ export const Lecture_Home = () => {
   };
 
   const formatTime = (timeString) => {
-    const [hours, minutes] = timeString.split(':');
-    return new Date(0, 0, 0, hours, minutes).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const [hours, minutes] = timeString.split(":");
+    return new Date(0, 0, 0, hours, minutes).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
 
   const getDayName = (day) => {
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const days = [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+    ];
     return days[day];
   };
 
@@ -93,7 +108,7 @@ export const Lecture_Home = () => {
                 <span class="sr-only">Toggle sidebar</span>
               </button>
               <a href="/" class="flex items-center justify-between mr-4">
-                <img src="presenT.svg" class="mr-3 h-8" alt="Flowbite Logo" />
+                <img src="/presenT.svg" class="mr-3 h-8" alt="PresentT Logo" />
                 <span class="self-center text-2xl font-semibold whitespace-nowrap dark:text-white">
                   presenT
                 </span>
@@ -111,7 +126,7 @@ export const Lecture_Home = () => {
                 <span class="sr-only">Open user menu</span>
                 <img
                   class="w-8 h-8 rounded-full"
-                  src="user.png"
+                  src="/user.png"
                   alt="user photo"
                 />
               </button>
@@ -169,9 +184,10 @@ export const Lecture_Home = () => {
           <div class="overflow-y-auto py-5 px-3  h-full bg-white dark:bg-gray-800">
             <ul class="space-y-3">
               {/* Create Seession */}
+
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="create_session"
                   class="flex items-center p-2 text-base font-medium text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group"
                 >
                   <svg
@@ -191,12 +207,12 @@ export const Lecture_Home = () => {
                   </svg>
 
                   <span class="ml-3">Create Session</span>
-                </a>
+                </Link>
               </li>
               {/* Manage Courses */}
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="manage_courses"
                   class="flex items-center p-2 text-base font-medium text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group"
                 >
                   <svg
@@ -216,12 +232,12 @@ export const Lecture_Home = () => {
                   </svg>
 
                   <span class="ml-3">Manage Courses</span>
-                </a>
+                </Link>
               </li>
               {/* Attendance Report */}
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="report"
                   class="flex items-center p-2 text-base font-medium text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group"
                 >
                   <svg
@@ -243,12 +259,12 @@ export const Lecture_Home = () => {
                   </svg>
 
                   <span class="ml-3">Attendance Report</span>
-                </a>
+                </Link>
               </li>
               {/* Course Schedules */}
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="course_schedules"
                   class="flex items-center p-2 text-base font-medium text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group"
                 >
                   <svg
@@ -268,84 +284,25 @@ export const Lecture_Home = () => {
                   </svg>
 
                   <span class="ml-3">Course Schedules</span>
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
         </aside>
 
-        <main class="p-4 md:ml-64 h-auto pt-20">
-
-        <div className="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 p-6 mb-4 bg-gray-50 dark:bg-gray-800">
-  <h2 className="text-3xl font-bold mb-6 text-gray-800 dark:text-white">Welcome, {userName}</h2>
-  
-  {isLoading ? (
-    <div className="text-center py-10">
-      <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-white"></div>
-      <p className="mt-2 text-gray-600 dark:text-gray-300">Loading...</p>
-    </div>
-  ) : error ? (
-    <div className="text-center py-10 text-red-500 dark:text-red-400">{error}</div>
-  ) : (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {courses.map((course) => (
-        <div key={course.courseId} className="bg-white dark:bg-gray-700 rounded-lg shadow-md p-6 transition-all duration-300 hover:shadow-lg">
-          <h3 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">{course.courseName}</h3>
-          
-          <div className="mb-6">
-            <h4 className="text-lg font-medium mb-3 text-gray-700 dark:text-gray-200">Upcoming Lectures</h4>
-            <ul className="space-y-2">
-              {course.upcomingLectures.length > 0 ? (
-                course.upcomingLectures.map((lecture, index) => (
-                  <li key={index} className="text-sm bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-200 py-2 px-3 rounded-md">
-                    <span className="font-medium">{getDayName(lecture.day)}</span>, {formatTime(lecture.startTime)} - {formatTime(lecture.endTime)}
-                  </li>
-                ))
-              ) : (
-                <li className="text-sm text-gray-500 dark:text-gray-400 italic">No upcoming lectures</li>
-              )}
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="text-lg font-medium mb-3 text-gray-700 dark:text-gray-200">Earlier Lectures</h4>
-            <ul className="space-y-2">
-              {course.earlierLectures.length > 0 ? (
-                course.earlierLectures.map((lecture, index) => (
-                  <li key={index} className="text-sm bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300 py-2 px-3 rounded-md">
-                    <span className="font-medium">{getDayName(lecture.day)}</span>, {formatTime(lecture.startTime)} - {formatTime(lecture.endTime)}
-                  </li>
-                ))
-              ) : (
-                <li className="text-sm text-gray-500 dark:text-gray-400 italic">No earlier lectures</li>
-              )}
-            </ul>
-          </div>
-        </div>
-      ))}
-    </div>
-  )}
-</div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-            <div class="border-2 border-dashed border-gray-300 rounded-lg dark:border-gray-600 h-32 md:h-64"></div>
-            <div class="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 h-32 md:h-64"></div>
-            <div class="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 h-32 md:h-64"></div>
-            <div class="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 h-32 md:h-64"></div>
-          </div>
-          <div class="grid grid-cols-2 gap-4 mb-4">
-            <div class="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 h-48 md:h-72"></div>
-            <div class="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 h-48 md:h-72"></div>
-            <div class="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 h-48 md:h-72"></div>
-            <div class="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 h-48 md:h-72"></div>
-          </div>
-          <div class="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 h-96 mb-4"></div>
-          <div class="grid grid-cols-2 gap-4">
-            <div class="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 h-48 md:h-72"></div>
-            <div class="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 h-48 md:h-72"></div>
-            <div class="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 h-48 md:h-72"></div>
-            <div class="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 h-48 md:h-72"></div>
-          </div>
+        <main className="p-4 md:ml-64 h-screen pt-20">
+          {showCoursesTimes ? (
+            <CourseScheduleDisplay
+              courses={courses}
+              isLoading={isLoading}
+              error={error}
+              userName={userName}
+              getDayName={getDayName}
+              formatTime={formatTime}
+            />
+          ) : (
+            <Outlet />
+          )}
         </main>
       </div>
     </>

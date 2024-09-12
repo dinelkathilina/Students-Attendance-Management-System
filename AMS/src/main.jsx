@@ -5,41 +5,71 @@ import {Student_Home} from './routes/Student_Home'
 import {Lecture_Home} from './routes/Lecture_Home'
 import {ErrorPage} from './ErrorPage'
 import {Root} from './routes/Root'
+import { Createsession } from "./routes/Createsession";
+import App from "./App";
 
 import {
   createBrowserRouter,
+  Outlet,
   RouterProvider,
 } from "react-router-dom";
 import "./index.css";
 import { Signup } from "./routes/Signup";
+import  ManageCourses  from "./routes/ManageCourses";
+import { Report } from "./routes/Report";
+import { CourseSchedules } from "./routes/CourseSchedules";
+
 
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <Root />,
-    errorElement: <ErrorPage/>,
+    element: <App />,
+    errorElement: <ErrorPage />,
+    children: [
+      {
+        index: true,
+        element: <Root />,
+      },
+      {
+        path: "lecture_home",
+        element: (
+          <ProtectedRoute allowedRoles={["Lecturer"]}>
+            <Lecture_Home />
+          </ProtectedRoute>
+        ),
+        children: [
+          {
+            path: "create_session",
+            element: <Createsession />,
+          },
+          {
+            path: "manage_courses",
+            element:<ManageCourses />,
+          },
+          {
+            path: "report",
+            element:<Report />,
+          },
+          {
+            path: "course_schedules",
+            element:<CourseSchedules />,
+          },
+        ],
+      },
+      {
+        path: "student_home",
+        element: (
+          <ProtectedRoute allowedRoles={["Student"]}>
+            <Student_Home />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "register",
+        element: <Signup />,
+      },
+    ],
   },
-  {
-    path: "/lecture_home",
-    element: (
-      <ProtectedRoute allowedRoles={["Lecturer"]}>
-        <Lecture_Home />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/student_home",
-    element: (
-      <ProtectedRoute allowedRoles={["Student"]}>
-        <Student_Home />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/register",
-    element: <Signup />,
-  }
-
 ]);
 
 ReactDOM.createRoot(document.getElementById("root")).render(
