@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import authService from "../Services/authservice";
+import authservice from "../Services/authservice.js";
 export const Signup = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -31,7 +31,7 @@ export const Signup = () => {
     setIsLoading(true);
 
     try {
-      const response = await authService.register(
+      const response = await authservice.register(
         name,
         email,
         password,
@@ -40,10 +40,10 @@ export const Signup = () => {
       console.log("Registration successful:", response);
 
       // Automatically log in the user after successful registration
-      await authService.login(email, password, false);
+      await authservice.login(email, password, false);
 
       // Redirect to appropriate page based on user type
-      const user = authService.getCurrentUser();
+      const user = authservice.getCurrentUser();
       if (user.userType === "Student") {
         navigate("/student_home");
       } else if (user.userType === "Lecturer") {

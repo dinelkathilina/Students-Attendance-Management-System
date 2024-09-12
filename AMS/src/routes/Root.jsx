@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import authService from '../Services/authservice';
+import authservice from '../Services/authservice.js';
 export const Root = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -15,7 +15,7 @@ export const Root = () => {
     setIsLoading(true);
     setError('');
     try {
-      const response = await authService.login(email, password, rememberMe);
+      const response = await authservice.login(email, password, rememberMe);
       
       // Store user data in localStorage
       const userData = {

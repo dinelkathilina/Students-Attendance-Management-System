@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import authService from "../Services/authservice";
+import authservice from "../Services/authservice.js";
 import { useNavigate } from "react-router-dom";
 import { initFlowbite } from 'flowbite';
 
@@ -11,7 +11,7 @@ export const Student_Home = () => {
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        const user = await authService.getProfile();
+        const user = await authservice.getProfile();
         console.log("Fetched user profile:", user); // Debug log
         if (user) {
           setUserName(user.name || "Student");
@@ -30,7 +30,7 @@ export const Student_Home = () => {
   }, [navigate]);
 
   const handleLogout = () => {
-    authService.logout();
+    authservice.logout();
     navigate("/");
   };
 

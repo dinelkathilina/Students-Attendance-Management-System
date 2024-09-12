@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import authService from "../Services/authservice";
+import authservice from "../Services/authservice.js";
 import CourseScheduleDisplay from "../Components/CourseScheduleDisplay";
 
 export const CourseSchedules = () => {
@@ -11,12 +11,12 @@ export const CourseSchedules = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const user = await authService.getProfile();
+        const user = await authservice.getProfile();
         if (user) {
           setUserName(user.name || "Lecturer");
         }
 
-        const coursesData = await authService.getLecturerCoursesTime();
+        const coursesData = await authservice.getLecturerCoursesTime();
         setCourses(coursesData);
         setIsLoading(false);
       } catch (error) {

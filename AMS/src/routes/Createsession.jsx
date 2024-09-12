@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import QRCode from "qrcode";
-import authService from "../Services/authservice";
+import authservice from "../Services/authservice.js";
 import { useSession } from "../Context/SessionContext";
 
 export const Createsession = () => {
@@ -23,9 +23,9 @@ export const Createsession = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const coursesData = await authService.getLecturerCourses();
+        const coursesData = await authservice.getLecturerCourses();
         setCourses(coursesData);
-        const lectureHallsData = await authService.getLectureHalls();
+        const lectureHallsData = await authservice.getLectureHalls();
         setLectureHalls(lectureHallsData);
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -76,7 +76,7 @@ export const Createsession = () => {
         timeRemaining: formData.expirationMinutes * 60 // Add this line
       };
   
-      const response = await authService.createSession(newSessionData);
+      const response = await authservice.createSession(newSessionData);
       startSession({
         ...newSessionData,
         sessionCode: response.sessionCode,
