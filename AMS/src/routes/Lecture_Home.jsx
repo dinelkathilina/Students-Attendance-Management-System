@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import authService from "../Services/authservice";
+import authservice from "../Services/authservice";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { initFlowbite } from "flowbite";
 import CourseScheduleDisplay from '../Components/CourseScheduleDisplay'
@@ -16,7 +16,7 @@ export const Lecture_Home = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const user = await authService.getProfile();
+        const user = await authservice.getProfile();
         if (user) {
           setUserName(user.name || "Lecturer");
           setUserEmail(user.email || "");
@@ -25,7 +25,7 @@ export const Lecture_Home = () => {
           return;
         }
 
-        const coursesData = await authService.getLecturerCoursesTime();
+        const coursesData = await authservice.getLecturerCoursesTime();
         setCourses(coursesData);
         setIsLoading(false);
       } catch (error) {
@@ -42,7 +42,7 @@ export const Lecture_Home = () => {
   }, [navigate, location.pathname]);
 
   const handleLogout = () => {
-    authService.logout();
+    authservice.logout();
     navigate("/");
   };
 

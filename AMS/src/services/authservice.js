@@ -3,7 +3,7 @@ import axios from 'axios';
 const API_URL = 'https://ams-bmanedabbnb8gxdd.southeastasia-01.azurewebsites.net/'; 
  //const API_URL = 'https://localhost:7243'; 
 
-const authService = {
+const authservice = {
 
     login: async (email, password, rememberMe) => {
       const response = await axios.post(`${API_URL}/login`, {
@@ -29,7 +29,7 @@ const authService = {
         console.error('Error fetching profile:', error);
         if (error.response && error.response.status === 401) {
           // Token might be expired, logout the user
-          authService.logout();
+          authservice.logout();
         }
         return null;
       }
@@ -123,4 +123,4 @@ const authService = {
   // Add more auth-related functions as needed
 };
 
-export default authService;
+export default authservice;

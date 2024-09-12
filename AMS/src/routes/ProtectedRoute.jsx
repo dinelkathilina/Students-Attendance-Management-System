@@ -1,9 +1,9 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import authService from '../Services/authservice.js';
+import authservice from '../Services/authservice.js';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
-  const currentUser = authService.getCurrentUser();
+  const currentUser = authservice.getCurrentUser();
 
   if (!currentUser) {
     return <Navigate to="/" replace />;
