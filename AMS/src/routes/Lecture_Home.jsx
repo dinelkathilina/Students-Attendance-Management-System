@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import authservice from "../Services/authservice";
+import authservice from "../services/authservice";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { initFlowbite } from "flowbite";
 import CourseScheduleDisplay from '../Components/CourseScheduleDisplay'

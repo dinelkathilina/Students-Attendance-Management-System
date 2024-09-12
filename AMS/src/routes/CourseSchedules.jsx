@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import authservice from "../Services/authservice";
+import authservice from "../services/authservice";
 import CourseScheduleDisplay from "../Components/CourseScheduleDisplay";
 
 export const CourseSchedules = () => {
