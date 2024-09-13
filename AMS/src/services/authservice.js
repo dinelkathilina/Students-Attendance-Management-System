@@ -17,7 +17,8 @@ const authservice = {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
-        }
+        },
+        withCredentials: true
       }
     );
       console.log('Login response:', response.data);
