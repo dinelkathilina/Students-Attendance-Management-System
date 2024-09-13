@@ -12,12 +12,14 @@ const authservice = {
         email,
         password,
         rememberMe
-      }, {
+      }, 
+      /*{
         headers: {
           'Content-Type': 'application/json',
           'User-Agent': navigator.userAgent
         }
-      });
+      }*/
+    );
       console.log('Login response:', response.data);
       if (response.data.token) {
         localStorage.setItem('token', response.data.token);
@@ -41,7 +43,7 @@ const authservice = {
       throw error;
     }
   },
-  
+
    /* login: async (email, password, rememberMe) => {
       const response = await axios.post(`${API_URL}/login`, {
         email,
