@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'https://ams-bmanedabbnb8gxdd.southeastasia-01.azurewebsites.net/'; 
+const API_URL = 'https://ams-bmanedabbnb8gxdd.southeastasia-01.azurewebsites.net'; 
  //const API_URL = 'https://localhost:7243'; 
 
 const authservice = {
@@ -13,12 +13,12 @@ const authservice = {
         password,
         rememberMe
       }, 
-      /*{
+      {
         headers: {
           'Content-Type': 'application/json',
-          'User-Agent': navigator.userAgent
+          'Accept': 'application/json'
         }
-      }*/
+      }
     );
       console.log('Login response:', response.data);
       if (response.data.token) {
