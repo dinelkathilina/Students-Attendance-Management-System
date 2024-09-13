@@ -7,7 +7,7 @@ const authservice = {
 
   login: async (email, password, rememberMe) => {
     try {
-      console.log('Sending login request with payload:', { email, rememberMe });
+      console.log('Sending login request with payload:', { email, rememberMe, passwordProvided: !!password });
       const response = await axios.post(`${API_URL}/login`, {
         email,
         password,
