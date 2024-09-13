@@ -5,7 +5,44 @@ const API_URL = 'https://ams-bmanedabbnb8gxdd.southeastasia-01.azurewebsites.net
 
 const authservice = {
 
-    login: async (email, password, rememberMe) => {
+  login: async (email, password, rememberMe) => {
+    try {
+      console.log('Sending login request with payload:', { email, rememberMe });
+      const response = await axios.post(`${API_URL}/login`, {
+        email,
+        password,
+        rememberMe
+      }, {
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': navigator.userAgent
+        }
+      });
+      console.log('Login response:', response.data);
+      if (response.data.token) {
+        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('user', JSON.stringify(response.data));
+      }
+      return response.data;
+    } catch (error) {
+      console.error('Login error:', {
+        message: error.message,
+        response: error.response ? {
+          status: error.response.status,
+          data: error.response.data,
+          headers: error.response.headers
+        } : 'No response',
+        request: error.request ? {
+          method: error.request.method,
+          url: error.request.url,
+          headers: error.request.headers
+        } : 'No request'
+      });
+      throw error;
+    }
+  },
+  
+   /* login: async (email, password, rememberMe) => {
       const response = await axios.post(`${API_URL}/login`, {
         email,
         password,
@@ -16,7 +53,7 @@ const authservice = {
         localStorage.setItem('user', JSON.stringify(response.data));
       }
       return response.data;
-    },
+    },*/
   getProfile: async () => {
     const token = localStorage.getItem('token');
     if (token) {
