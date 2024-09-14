@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import QRCode from "qrcode";
-import authservice from "../services/authservice";
 import { useSession } from "../Context/SessionContext";
+import authservice from "../Services/authservice";
 
 export const Createsession = () => {
 
