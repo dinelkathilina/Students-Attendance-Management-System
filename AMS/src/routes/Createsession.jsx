@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import QRCode from "qrcode";
 import { useSession } from "../Context/SessionContext";
-import authservice from "../Services/authservice";
+import authservice from "../../services/authservice";
 
 export const Createsession = () => {
 
