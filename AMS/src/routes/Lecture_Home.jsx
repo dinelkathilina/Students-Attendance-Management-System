@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import authservice from "../services/authservice";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { initFlowbite } from "flowbite";
 import CourseScheduleDisplay from '../Components/CourseScheduleDisplay'
+import authservice from "../../services/authservice";
 export const Lecture_Home = () => {
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");

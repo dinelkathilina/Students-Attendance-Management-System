@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import authservice from "../services/authservice";
 import CourseScheduleDisplay from "../Components/CourseScheduleDisplay";
+import authservice from '../../services/authservice';
 
 export const CourseSchedules = () => {
   const [courses, setCourses] = useState([]);
