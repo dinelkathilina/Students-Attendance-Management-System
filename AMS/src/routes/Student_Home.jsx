@@ -1,18 +1,20 @@
 import { useState, useEffect } from "react";
-import authservice from "../services/authservice";
 import { useNavigate } from "react-router-dom";
-import { initFlowbite } from 'flowbite';
+import { initFlowbite } from "flowbite";
+import authservice from "../../services/authservice";
+import QRCodeScanner from "../Components/QRCodeScanner";
 
 export const Student_Home = () => {
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
+  const [isScanning, setIsScanning] = useState(false);
+  const [checkInStatus, setCheckInStatus] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
         const user = await authservice.getProfile();
-        console.log("Fetched user profile:", user); // Debug log
         if (user) {
           setUserName(user.name || "Student");
           setUserEmail(user.email || "");
@@ -30,8 +32,23 @@ export const Student_Home = () => {
   }, [navigate]);
 
   const handleLogout = () => {
-    authservice.logout();
+    authService.logout();
     navigate("/");
+  };
+
+  const handleScanClick = () => {
+    setIsScanning(true);
+  };
+
+  const handleScanSuccess = (response) => {
+    setIsScanning(false);
+    setCheckInStatus({ success: true, message: "Successfully checked in!" });
+    // You might want to update other parts of your UI or state here
+  };
+
+  const handleScanError = (error) => {
+    setIsScanning(false);
+    setCheckInStatus({ success: false, message: error });
   };
 
   return (
@@ -93,7 +110,6 @@ export const Student_Home = () => {
                 <span class="sr-only">Open user menu</span>
                 <img
                   class="w-8 h-8 rounded-full"
-                  
                   src="user.png"
                   alt="user photo"
                 />
@@ -151,33 +167,8 @@ export const Student_Home = () => {
         >
           <div class="overflow-y-auto py-5 px-3  h-full bg-white dark:bg-gray-800">
             <ul class="space-y-3">
-              {/* Create Seession */}
-              <li>
-                <a
-                  href="#"
-                  class="flex items-center p-2 text-base font-medium text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group"
-                >
-                  <svg
-                    class="w-6 h-6 text-gray-800 dark:text-white"
-                    aria-hidden="true"
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      fill-rule="evenodd"
-                      d="M2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10S2 17.523 2 12Zm11-4.243a1 1 0 1 0-2 0V11H7.757a1 1 0 1 0 0 2H11v3.243a1 1 0 1 0 2 0V13h3.243a1 1 0 1 0 0-2H13V7.757Z"
-                      clip-rule="evenodd"
-                    />
-                  </svg>
-
-                  <span class="ml-3">Create Session</span>
-                </a>
-              </li>
               {/* Manage Courses */}
-              <li>
+              {/* <li>
                 <a
                   href="#"
                   class="flex items-center p-2 text-base font-medium text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group"
@@ -200,7 +191,7 @@ export const Student_Home = () => {
 
                   <span class="ml-3">Manage Courses</span>
                 </a>
-              </li>
+              </li>*/}
               {/* Attendance Report */}
               <li>
                 <a
@@ -250,7 +241,7 @@ export const Student_Home = () => {
                     />
                   </svg>
 
-                  <span class="ml-3">Course Schedules</span>
+                  <span class="ml-3">View Schedule</span>
                 </a>
               </li>
             </ul>
@@ -258,13 +249,37 @@ export const Student_Home = () => {
         </aside>
 
         <main class="p-4 md:ml-64 h-auto pt-20">
+        <div className="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 h-96 mb-4 flex flex-col justify-center items-center">
+            {!isScanning ? (
+              <button
+                type="button"
+                onClick={handleScanClick}
+                className="text-gray-900 bg-white hover:bg-gray-100 border border-gray-200 focus:ring-4 focus:outline-none focus:ring-gray-100 font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center dark:focus:ring-gray-800 dark:bg-white dark:border-gray-700 dark:text-gray-900 dark:hover:bg-gray-200 mb-2"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 mr-2 -ml-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="8" y1="12" x2="16" y2="12"></line>
+                  <line x1="12" y1="8" x2="12" y2="16"></line>
+                </svg>
+                Scan QR Code
+              </button>
+            ) : (
+              <QRCodeScanner onScanSuccess={handleScanSuccess} onScanError={handleScanError} />
+            )}
+            {checkInStatus && (
+              <div className={`mt-4 p-4 ${checkInStatus.success ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'} rounded-lg`}>
+                {checkInStatus.message}
+              </div>
+            )}
+          
+          </div>
+          {/* Second */}
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
             <div class="border-2 border-dashed border-gray-300 rounded-lg dark:border-gray-600 h-32 md:h-64"></div>
             <div class="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 h-32 md:h-64"></div>
             <div class="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 h-32 md:h-64"></div>
             <div class="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 h-32 md:h-64"></div>
           </div>
-          <div class="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 h-96 mb-4"></div>
           <div class="grid grid-cols-2 gap-4 mb-4">
             <div class="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 h-48 md:h-72"></div>
             <div class="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 h-48 md:h-72"></div>
