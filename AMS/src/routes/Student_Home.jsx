@@ -44,7 +44,7 @@ export const Student_Home = () => {
     setIsScanning(false);
     setCheckInStatus({ success: true, message: response.message });
   };
-  
+
   const handleScanError = (error) => {
     setIsScanning(false);
     setCheckInStatus({ success: false, message: error });
@@ -248,27 +248,55 @@ export const Student_Home = () => {
         </aside>
 
         <main class="p-4 md:ml-64 h-auto pt-20">
-        <div className="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 h-96 mb-4 flex flex-col justify-center items-center">
-  {!isScanning ? (
-    <button
-      type="button"
-      onClick={handleScanClick}
-      className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-    >
-      <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 mr-2 -ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v-4m6 0h-2m2 0v4m-6 0h-2m2 0v4m-6-4h2m-2 0v4m0-11h2m-2 0v4m6-4h2m-2 0v4m6-4h2m-2 0v4m0-11h2m-2 0v4" />
-      </svg>
-      Scan QR Code
-    </button>
-  ) : (
-    <QRCodeScanner onScanSuccess={handleScanSuccess} onScanError={handleScanError} />
-  )}
-  {checkInStatus && (
-    <div className={`mt-4 p-4 ${checkInStatus.success ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'} rounded-lg`}>
-      {checkInStatus.message}
-    </div>
-  )}
-</div>
+          <div className="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 h-96 mb-4 flex flex-col justify-center items-center">
+            {!isScanning ? (
+              <button
+                type="button"
+                onClick={handleScanClick}
+                className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-6 h-6 mr-2 -ml-1"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v1m6 11h2m-6 0h-2v4m0-11v-4m6 0h-2m2 0v4m-6 0h-2m2 0v4m-6-4h2m-2 0v4m0-11h2m-2 0v4m6-4h2m-2 0v4m6-4h2m-2 0v4m0-11h2m-2 0v4"
+                  />
+                </svg>
+                Scan QR Code
+              </button>
+            ) : (
+              <>
+                <QRCodeScanner
+                  onScanSuccess={handleScanSuccess}
+                  onScanError={handleScanError}
+                />
+                <button
+                  onClick={() => setIsScanning(false)}
+                  className="mt-4 text-white bg-gray-600 hover:bg-gray-700 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center"
+                >
+                  Reset Scanner
+                </button>
+              </>
+            )}
+            {checkInStatus && (
+              <div
+                className={`mt-4 p-4 ${
+                  checkInStatus.success
+                    ? "bg-green-100 text-green-700"
+                    : "bg-red-100 text-red-700"
+                } rounded-lg`}
+              >
+                {checkInStatus.message}
+              </div>
+            )}
+          </div>
           {/* Second */}
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
             <div class="border-2 border-dashed border-gray-300 rounded-lg dark:border-gray-600 h-32 md:h-64"></div>

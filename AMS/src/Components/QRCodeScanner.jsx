@@ -5,6 +5,7 @@ import authService from '../../services/authservice';
 const QRCodeScanner = ({ onScanSuccess, onScanError }) => {
   const [result, setResult] = useState("");
   const [scanStatus, setScanStatus] = useState(null);
+  const [isChecking, setIsChecking] = useState(false);
 
   const { ref } = useZxing({
     onDecodeResult(result) {
@@ -16,6 +17,8 @@ const QRCodeScanner = ({ onScanSuccess, onScanError }) => {
   const handleScan = async (scannedData) => {
     if (scannedData) {
       console.log('Scanned session code:', scannedData);
+      setIsChecking(true);
+      setScanStatus(null);
       try {
         const response = await authService.checkInToSession(scannedData);
         console.log('Check-in response:', response);
@@ -26,6 +29,8 @@ const QRCodeScanner = ({ onScanSuccess, onScanError }) => {
         const errorMessage = error.response?.data?.message || error.message;
         setScanStatus({ success: false, message: errorMessage });
         onScanError(errorMessage);
+      } finally {
+        setIsChecking(false);
       }
     }
   };
@@ -34,6 +39,17 @@ const QRCodeScanner = ({ onScanSuccess, onScanError }) => {
     <div className="qr-reader-container flex flex-col items-center">
       <video ref={ref} className="w-full max-w-sm mx-auto rounded-lg shadow-lg" />
       {result && <p className="mt-2 text-sm text-gray-500">Last scanned: {result}</p>}
+      {isChecking && (
+        <div className="mt-4 p-4 rounded-lg w-full max-w-sm bg-blue-100 text-blue-700">
+          <div className="flex items-center">
+            <svg className="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p className="font-medium">Checking in...</p>
+          </div>
+        </div>
+      )}
       {scanStatus && (
         <div className={`mt-4 p-4 rounded-lg w-full max-w-sm ${
           scanStatus.success ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
