@@ -61,7 +61,15 @@ export const Student_Home = () => {
 
   const handleScanError = (error) => {
     setIsScanning(false);
-    showToast(error, "error");
+    let errorMessage = "An error occurred while scanning";
+    if (typeof error === 'string') {
+      errorMessage = error;
+    } else if (error.response && error.response.data) {
+      errorMessage = error.response.data;
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    showToast(errorMessage, "error");
   };
 
   return (
@@ -263,12 +271,12 @@ export const Student_Home = () => {
 
         <main class="p-4 md:ml-64 h-auto pt-20">
         <Toast
-            key={toast.message} // Add this line to force re-render on new messages
+            key={toast.message}
             message={toast.message}
             type={toast.type}
             show={toast.show}
             onClose={closeToast}
-            position="top-right" // Position the toast near the header
+            position="top-right"
           />
           <div className="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 p-4 mb-4 flex flex-col justify-center items-center">
             {!isScanning ? (
