@@ -31,7 +31,7 @@ const Toast = ({ message, type, show, onClose, position = "top-right" }) => {
   return (
     <div
       id="toast"
-      className={`fixed ${positionClass} flex items-center w-full max-w-xs p-4 text-gray-500 bg-white rounded-lg shadow dark:text-gray-400 dark:bg-gray-800 z-50`}
+      className={`fixed ${positionClass} flex items-center w-full max-w-xs p-4 mb-4 text-gray-500 bg-white rounded-lg shadow dark:text-gray-400 dark:bg-gray-800 z-50`}
       role="alert"
     >
       <div

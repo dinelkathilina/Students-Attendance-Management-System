@@ -54,10 +54,10 @@ export const Student_Home = () => {
     setToast((prev) => ({ ...prev, show: false }));
   }, []);
 
-  const handleScanSuccess = async (scannedData) => {
+  const handleScanSuccess = async (result) => {
     setIsScanning(false);
     try {
-      const response = await authservice.checkInToSession(scannedData);
+      const response = await authservice.checkInToSession(result);
       showToast(response.message, "success");
     } catch (error) {
       handleScanError(error);
@@ -77,7 +77,6 @@ export const Student_Home = () => {
     console.error("Scan error:", errorMessage);
     showToast(errorMessage, "error");
   };
-
   return (
     <>
       <div class="antialiased bg-gray-50 dark:bg-gray-900">
@@ -276,15 +275,16 @@ export const Student_Home = () => {
         </aside>
 
         <main class="p-4 md:ml-64 h-auto pt-20">
-          <Toast
-            key={toast.message}
-            message={toast.message}
-            type={toast.type}
-            show={toast.show}
-            onClose={closeToast}
-            position="top-right"
-          />
-          <div className="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 p-4 mb-4 flex flex-col justify-center items-center">
+        <Toast
+          key={toast.message}
+          message={toast.message}
+          type={toast.type}
+          show={toast.show}
+          onClose={closeToast}
+          position="top-right"
+        />
+        <div className="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 p-4 mb-4">
+          <div className="flex flex-col items-center justify-center">
             {!isScanning ? (
               <button
                 type="button"
@@ -308,12 +308,21 @@ export const Student_Home = () => {
                 Scan QR Code
               </button>
             ) : (
-              <QRCodeScanner
-                onScanSuccess={handleScanSuccess}
-                onScanError={handleScanError}
-              />
+              <div className="w-full max-w-md">
+                <QRCodeScanner
+                  onScanSuccess={handleScanSuccess}
+                  onScanError={handleScanError}
+                />
+                <button
+                  onClick={() => setIsScanning(false)}
+                  className="mt-4 w-full text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-red-500 dark:hover:bg-red-600 dark:focus:ring-red-900"
+                >
+                  Cancel Scanning
+                </button>
+              </div>
             )}
           </div>
+        </div>
 
           {/* Second */}
 
