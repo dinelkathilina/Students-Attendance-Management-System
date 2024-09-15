@@ -9,23 +9,27 @@ export const Student_Home = () => {
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [isScanning, setIsScanning] = useState(false);
-  const [toast, setToast] = useState({ show: false, message: "", type: "success" });
+  const [toast, setToast] = useState({
+    show: false,
+    message: "",
+    type: "success",
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        const user = await authservice.getProfile();
+        const user = await authService.getProfile();
         if (user) {
           setUserName(user.name || "Student");
           setUserEmail(user.email || "");
         } else {
-          setToast({ show: true, message: "Failed to load user profile", type: "error" });
+          showToast("Failed to load user profile", "error");
           navigate("/");
         }
       } catch (error) {
         console.error("Error fetching user profile:", error);
-        setToast({ show: true, message: "An error occurred while loading your profile", type: "error" });
+        showToast("An error occurred while loading your profile", "error");
         navigate("/");
       }
     };
@@ -33,6 +37,14 @@ export const Student_Home = () => {
     fetchUserProfile();
     initFlowbite();
   }, [navigate]);
+
+  const showToast = useCallback((message, type) => {
+    setToast({ show: true, message, type });
+  }, []);
+
+  const closeToast = useCallback(() => {
+    setToast((prev) => ({ ...prev, show: false }));
+  }, []);
 
   const handleLogout = () => {
     navigate("/logout");
@@ -44,18 +56,13 @@ export const Student_Home = () => {
 
   const handleScanSuccess = (response) => {
     setIsScanning(false);
-    setToast({ show: true, message: response.message, type: "success" });
+    showToast(response.message, "success");
   };
 
   const handleScanError = (error) => {
     setIsScanning(false);
-    setToast({ show: true, message: error, type: "error" });
+    showToast(error, "error");
   };
-
-  const closeToast = () => {
-    setToast({ ...toast, show: false });
-  };
-  
 
   return (
     <>
@@ -256,12 +263,14 @@ export const Student_Home = () => {
 
         <main class="p-4 md:ml-64 h-auto pt-20">
         <Toast
-        message={toast.message}
-        type={toast.type}
-        show={toast.show}
-        onClose={closeToast}
-      />
-        <div className="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 p-4 mb-4 flex flex-col justify-center items-center">
+            key={toast.message} // Add this line to force re-render on new messages
+            message={toast.message}
+            type={toast.type}
+            show={toast.show}
+            onClose={closeToast}
+            position="top-right" // Position the toast near the header
+          />
+          <div className="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 p-4 mb-4 flex flex-col justify-center items-center">
             {!isScanning ? (
               <button
                 type="button"
@@ -292,9 +301,8 @@ export const Student_Home = () => {
             )}
           </div>
 
-          
           {/* Second */}
-          
+
           <div class="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 h-96 mb-4"></div>
           <div class="grid grid-cols-2 gap-4">
             <div class="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 h-48 md:h-72"></div>
@@ -304,7 +312,6 @@ export const Student_Home = () => {
           </div>
         </main>
       </div>
-      
     </>
   );
 };
