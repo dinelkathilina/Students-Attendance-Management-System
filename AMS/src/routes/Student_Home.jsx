@@ -48,6 +48,10 @@ export const Student_Home = () => {
 
   const showToast = useCallback((message, type) => {
     setToast({ show: true, message, type });
+    // Optionally, you can add a timeout to hide the toast after a few seconds
+    setTimeout(() => {
+      setToast((prev) => ({ ...prev, show: false }));
+    }, 5000); // Hide after 5 seconds
   }, []);
 
   const closeToast = useCallback(() => {
@@ -57,9 +61,12 @@ export const Student_Home = () => {
   const handleScanSuccess = async (result) => {
     setIsScanning(false);
     try {
+      console.log("Scan successful, attempting check-in with code:", result);
       const response = await authservice.checkInToSession(result);
+      console.log("Check-in response:", response);
       showToast(response.message, "success");
     } catch (error) {
+      console.error("Error during check-in:", error);
       handleScanError(error);
     }
   };
@@ -67,16 +74,17 @@ export const Student_Home = () => {
   const handleScanError = (error) => {
     setIsScanning(false);
     let errorMessage = "An error occurred while scanning";
-  
+
     if (error.response && error.response.data) {
       // API error response
-      errorMessage = error.response.data.message || error.response.data;
+      errorMessage =
+        error.response.data.message || JSON.stringify(error.response.data);
     } else if (error instanceof Error) {
       errorMessage = error.message;
-    } else if (typeof error === 'string') {
+    } else if (typeof error === "string") {
       errorMessage = error;
     }
-  
+
     console.error("Scan error:", errorMessage);
     showToast(errorMessage, "error");
   };
@@ -278,54 +286,54 @@ export const Student_Home = () => {
         </aside>
 
         <main class="p-4 md:ml-64 h-auto pt-20">
-        <Toast
-          key={toast.message}
-          message={toast.message}
-          type={toast.type}
-          show={toast.show}
-          onClose={closeToast}
-          position="top-right"
-        />
-        <div className="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 p-4 mb-4">
-          <div className="flex flex-col items-center justify-center">
-            {!isScanning ? (
-              <button
-                type="button"
-                onClick={() => setIsScanning(true)}
-                className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="w-6 h-6 mr-2 -ml-1"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 4v1m6 11h2m-6 0h-2v4m0-11v-4m6 0h-2m2 0v4m-6 0h-2m2 0v4m-6-4h2m-2 0v4m0-11h2m-2 0v4m6-4h2m-2 0v4m6-4h2m-2 0v4m0-11h2m-2 0v4"
-                  />
-                </svg>
-                Scan QR Code
-              </button>
-            ) : (
-              <div className="w-full max-w-md">
-                <QRCodeScanner
-                  onScanSuccess={handleScanSuccess}
-                  onScanError={handleScanError}
-                />
+          <Toast
+            key={toast.message} // Add a key to force re-render on message change
+            message={toast.message}
+            type={toast.type}
+            show={toast.show}
+            onClose={closeToast}
+            position="top-right"
+          />
+          <div className="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 p-4 mb-4">
+            <div className="flex flex-col items-center justify-center">
+              {!isScanning ? (
                 <button
-                  onClick={() => setIsScanning(false)}
-                  className="mt-4 w-full text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-red-500 dark:hover:bg-red-600 dark:focus:ring-red-900"
+                  type="button"
+                  onClick={() => setIsScanning(true)}
+                  className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
                 >
-                  Cancel Scanning
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="w-6 h-6 mr-2 -ml-1"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 4v1m6 11h2m-6 0h-2v4m0-11v-4m6 0h-2m2 0v4m-6 0h-2m2 0v4m-6-4h2m-2 0v4m0-11h2m-2 0v4m6-4h2m-2 0v4m6-4h2m-2 0v4m0-11h2m-2 0v4"
+                    />
+                  </svg>
+                  Scan QR Code
                 </button>
-              </div>
-            )}
+              ) : (
+                <div className="w-full max-w-md">
+                  <QRCodeScanner
+                    onScanSuccess={handleScanSuccess}
+                    onScanError={handleScanError}
+                  />
+                  <button
+                    onClick={() => setIsScanning(false)}
+                    className="mt-4 w-full text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-red-500 dark:hover:bg-red-600 dark:focus:ring-red-900"
+                  >
+                    Cancel Scanning
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
 
           {/* Second */}
 
