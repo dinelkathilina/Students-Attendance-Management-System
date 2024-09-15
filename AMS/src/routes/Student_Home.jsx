@@ -42,51 +42,26 @@ export const Student_Home = () => {
     navigate("/logout");
   };
 
-  const handleScanClick = () => {
-    setIsScanning(true);
-  };
-
   const showToast = useCallback((message, type) => {
     setToast({ show: true, message, type });
-    // Optionally, you can add a timeout to hide the toast after a few seconds
-    setTimeout(() => {
-      setToast((prev) => ({ ...prev, show: false }));
-    }, 5000); // Hide after 5 seconds
-  }, []);
-
-  const closeToast = useCallback(() => {
-    setToast((prev) => ({ ...prev, show: false }));
+    setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 3000);
   }, []);
 
   const handleScanSuccess = async (result) => {
     setIsScanning(false);
     try {
-      console.log("Scan successful, attempting check-in with code:", result);
       const response = await authservice.checkInToSession(result);
-      console.log("Check-in response:", response);
       showToast(response.message, "success");
     } catch (error) {
-      console.error("Error during check-in:", error);
-      handleScanError(error);
+      console.error("Check-in error:", error);
+      showToast(error.message || "Failed to check in", "error");
     }
   };
 
   const handleScanError = (error) => {
     setIsScanning(false);
-    let errorMessage = "An error occurred while scanning";
-
-    if (error.response && error.response.data) {
-      // API error response
-      errorMessage =
-        error.response.data.message || JSON.stringify(error.response.data);
-    } else if (error instanceof Error) {
-      errorMessage = error.message;
-    } else if (typeof error === "string") {
-      errorMessage = error;
-    }
-
-    console.error("Scan error:", errorMessage);
-    showToast(errorMessage, "error");
+    console.error("Scan error:", error);
+    showToast("Failed to scan QR code", "error");
   };
   return (
     <>
@@ -285,26 +260,29 @@ export const Student_Home = () => {
           </div>
         </aside>
 
-        <main class="p-4 md:ml-64 h-auto pt-20">
+        <main className="p-4 md:ml-64 h-auto pt-20">
+          {/* Toast notification */}
           <Toast
-            key={toast.message} // Add a key to force re-render on message change
             message={toast.message}
             type={toast.type}
             show={toast.show}
-            onClose={closeToast}
-            position="top-right"
+            onClose={() => setToast((prev) => ({ ...prev, show: false }))}
           />
-          <div className="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 p-4 mb-4">
+
+          {/* QR Code Scanning Section */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+              Attendance Check-In
+            </h2>
             <div className="flex flex-col items-center justify-center">
               {!isScanning ? (
                 <button
-                  type="button"
                   onClick={() => setIsScanning(true)}
                   className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    className="w-6 h-6 mr-2 -ml-1"
+                    className="w-5 h-5 mr-2 -ml-1"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -335,14 +313,23 @@ export const Student_Home = () => {
             </div>
           </div>
 
-          {/* Second */}
+          {/* Additional content sections */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Attendance History */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                Recent Attendance
+              </h3>
+              {/* Add attendance history list here */}
+            </div>
 
-          <div class="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 h-96 mb-4"></div>
-          <div class="grid grid-cols-2 gap-4">
-            <div class="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 h-48 md:h-72"></div>
-            <div class="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 h-48 md:h-72"></div>
-            <div class="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 h-48 md:h-72"></div>
-            <div class="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 h-48 md:h-72"></div>
+            {/* Upcoming Sessions */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                Upcoming Sessions
+              </h3>
+              {/* Add upcoming sessions list here */}
+            </div>
           </div>
         </main>
       </div>
