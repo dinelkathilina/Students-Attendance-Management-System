@@ -38,14 +38,6 @@ export const Student_Home = () => {
     initFlowbite();
   }, [navigate]);
 
-  const showToast = useCallback((message, type) => {
-    setToast({ show: true, message, type });
-  }, []);
-
-  const closeToast = useCallback(() => {
-    setToast((prev) => ({ ...prev, show: false }));
-  }, []);
-
   const handleLogout = () => {
     navigate("/logout");
   };
@@ -53,6 +45,14 @@ export const Student_Home = () => {
   const handleScanClick = () => {
     setIsScanning(true);
   };
+
+  const showToast = useCallback((message, type) => {
+    setToast({ show: true, message, type });
+  }, []);
+
+  const closeToast = useCallback(() => {
+    setToast((prev) => ({ ...prev, show: false }));
+  }, []);
 
   const handleScanSuccess = async (scannedData) => {
     setIsScanning(false);
@@ -71,7 +71,7 @@ export const Student_Home = () => {
     if (typeof error === "string") {
       errorMessage = error;
     } else if (error.response && error.response.data) {
-      errorMessage = error.response.data;
+      errorMessage = error.response.data.message || error.response.data;
     } else if (error.message) {
       errorMessage = error.message;
     }
