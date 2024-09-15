@@ -51,10 +51,28 @@ export const Student_Home = () => {
     setIsScanning(false);
     try {
       const response = await authservice.checkInToSession(result);
-      showToast(response.message, "success");
+      if (response && response.message) {
+        showToast(response.message, "success");
+      } else {
+        showToast("Check-in successful, but no message received", "success");
+      }
     } catch (error) {
       console.error("Check-in error:", error);
-      showToast(error.message || "Failed to check in", "error");
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        if (error.response.status === 400) {
+          showToast("Invalid or expired session code. Please try again.", "error");
+        } else {
+          showToast(`Server error: ${error.response.data.message || error.response.statusText}`, "error");
+        }
+      } else if (error.request) {
+        // The request was made but no response was received
+        showToast("No response from server. Please check your connection and try again.", "error");
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        showToast(`Error: ${error.message}`, "error");
+      }
     }
   };
 
