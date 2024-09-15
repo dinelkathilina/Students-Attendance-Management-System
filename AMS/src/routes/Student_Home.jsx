@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { initFlowbite } from "flowbite";
+import { initFlowbite,Toast } from "flowbite";
 import authservice from "../../services/authservice";
 import QRCodeScanner from "../Components/QRCodeScanner";
 
@@ -9,6 +9,9 @@ export const Student_Home = () => {
   const [userEmail, setUserEmail] = useState("");
   const [isScanning, setIsScanning] = useState(false);
   const [checkInStatus, setCheckInStatus] = useState(null);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [toastType, setToastType] = useState("success");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -42,13 +45,28 @@ export const Student_Home = () => {
 
   const handleScanSuccess = (response) => {
     setIsScanning(false);
-    setCheckInStatus({ success: true, message: response.message });
+    setToastMessage(response.message);
+    setToastType("success");
+    setShowToast(true);
   };
 
   const handleScanError = (error) => {
     setIsScanning(false);
-    setCheckInStatus({ success: false, message: error });
+    setToastMessage(error);
+    setToastType("error");
+    setShowToast(true);
   };
+  useEffect(() => {
+    if (showToast) {
+      const timer = setTimeout(() => {
+        setShowToast(false);
+      }, 3000); // Hide toast after 3 seconds
+
+      return () => clearTimeout(timer);
+    }
+  }, [showToast]);
+
+  
 
   return (
     <>
@@ -273,20 +291,78 @@ export const Student_Home = () => {
               </button>
             ) : (
               <QRCodeScanner
-                onScanSuccess={(response) => {
-                  setCheckInStatus({
-                    success: true,
-                    message: response.message,
-                  });
-                  setIsScanning(false);
-                }}
-                onScanError={(error) => {
-                  setCheckInStatus({ success: false, message: error });
-                  setIsScanning(false);
-                }}
+                onScanSuccess={handleScanSuccess}
+                onScanError={handleScanError}
               />
             )}
           </div>
+
+          {/* Toast component */}
+          {showToast && (
+            <div
+              id="toast-success"
+              className={`fixed bottom-5 right-5 flex items-center w-full max-w-xs p-4 mb-4 text-gray-500 ${
+                toastType === "success" ? "bg-green-100" : "bg-red-100"
+              } rounded-lg shadow dark:text-gray-400 dark:bg-gray-800`}
+              role="alert"
+            >
+              <div
+                className={`inline-flex items-center justify-center flex-shrink-0 w-8 h-8 ${
+                  toastType === "success"
+                    ? "text-green-500 bg-green-100"
+                    : "text-red-500 bg-red-100"
+                } rounded-lg dark:bg-green-800 dark:text-green-200`}
+              >
+                {toastType === "success" ? (
+                  <svg
+                    className="w-5 h-5"
+                    aria-hidden="true"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
+                  </svg>
+                ) : (
+                  <svg
+                    className="w-5 h-5"
+                    aria-hidden="true"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 11.793a1 1 0 1 1-1.414 1.414L10 11.414l-2.293 2.293a1 1 0 0 1-1.414-1.414L8.586 10 6.293 7.707a1 1 0 0 1 1.414-1.414L10 8.586l2.293-2.293a1 1 0 0 1 1.414 1.414L11.414 10l2.293 2.293Z" />
+                  </svg>
+                )}
+                <span className="sr-only">Check icon</span>
+              </div>
+              <div className="ml-3 text-sm font-normal">{toastMessage}</div>
+              <button
+                type="button"
+                className="ml-auto -mx-1.5 -my-1.5 bg-white text-gray-400 hover:text-gray-900 rounded-lg focus:ring-2 focus:ring-gray-300 p-1.5 hover:bg-gray-100 inline-flex items-center justify-center h-8 w-8 dark:text-gray-500 dark:hover:text-white dark:bg-gray-800 dark:hover:bg-gray-700"
+                data-dismiss-target="#toast-success"
+                aria-label="Close"
+                onClick={() => setShowToast(false)}
+              >
+                <span className="sr-only">Close</span>
+                <svg
+                  className="w-3 h-3"
+                  aria-hidden="true"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 14 14"
+                >
+                  <path
+                    stroke="currentColor"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"
+                  />
+                </svg>
+              </button>
+            </div>
+          )}
           {/* Second */}
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
             <div class="border-2 border-dashed border-gray-300 rounded-lg dark:border-gray-600 h-32 md:h-64"></div>
