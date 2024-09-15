@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useZxing } from "react-zxing";
-import authService from '../../services/authservice';
+import authservice from '../../services/authservice';
 
 const QRCodeScanner = ({ onScanSuccess, onScanError }) => {
   const [result, setResult] = useState("");
@@ -24,7 +24,7 @@ const QRCodeScanner = ({ onScanSuccess, onScanError }) => {
       setIsChecking(true);
       setScanStatus(null);
       try {
-        const response = await authService.checkInToSession(scannedData);
+        const response = await authservice.checkInToSession(scannedData);
         console.log('Check-in response:', response);
         setScanStatus({ success: true, message: response.message });
         onScanSuccess(response);

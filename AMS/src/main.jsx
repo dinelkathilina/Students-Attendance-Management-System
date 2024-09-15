@@ -1,25 +1,18 @@
 import React from "react";
-import * as ReactDOM from "react-dom/client";
-import ProtectedRoute from './routes/ProtectedRoute'
-import {Student_Home} from './routes/Student_Home'
-import {Lecture_Home} from './routes/Lecture_Home'
-import {ErrorPage} from './ErrorPage'
-import {Root} from './routes/Root'
+import ReactDOM from "react-dom/client";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import ProtectedRoute from './routes/ProtectedRoute';
+import { Student_Home } from './routes/Student_Home';
+import { Lecture_Home } from './routes/Lecture_Home';
+import { ErrorPage } from './ErrorPage';
+import { Root } from './routes/Root';
 import { Createsession } from "./routes/Createsession";
 import App from "./App";
-
-import {
-  createBrowserRouter,
-  Outlet,
-  RouterProvider,
-} from "react-router-dom";
-import "./index.css";
 import { Signup } from "./routes/Signup";
-import  ManageCourses  from "./routes/ManageCourses";
+import ManageCourses from "./routes/ManageCourses";
 import { Report } from "./routes/Report";
 import { CourseSchedules } from "./routes/CourseSchedules";
-
-
+import "./index.css";
 const router = createBrowserRouter([
   {
     path: "/",
@@ -44,15 +37,15 @@ const router = createBrowserRouter([
           },
           {
             path: "manage_courses",
-            element:<ManageCourses />,
+            element: <ManageCourses />,
           },
           {
             path: "report",
-            element:<Report />,
+            element: <Report />,
           },
           {
             path: "course_schedules",
-            element:<CourseSchedules />,
+            element: <CourseSchedules />,
           },
         ],
       },
@@ -68,6 +61,10 @@ const router = createBrowserRouter([
         path: "register",
         element: <Signup />,
       },
+      {
+        path: "logout",
+        element: <ProtectedRoute allowedRoles={["Student", "Lecturer"]}><div>Logging out...</div></ProtectedRoute>,
+      },
     ],
   },
 ]);
@@ -77,3 +74,4 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     <RouterProvider router={router} />
   </React.StrictMode>
 );
+

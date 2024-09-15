@@ -76,7 +76,9 @@ const authservice = {
     }
     return null;
   },
+  
   logout: () => {
+    localStorage.removeItem('token');
     localStorage.removeItem('user');
   },
 

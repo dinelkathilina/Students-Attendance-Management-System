@@ -42,8 +42,7 @@ export const Lecture_Home = () => {
   }, [navigate, location.pathname]);
 
   const handleLogout = () => {
-    authservice.logout();
-    navigate("/");
+    navigate("/logout");
   };
 
   const formatTime = (timeString) => {
