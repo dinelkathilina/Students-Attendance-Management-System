@@ -162,15 +162,21 @@ const authservice = {
   checkInToSession: async (sessionCode) => {
     const token = localStorage.getItem('token');
     if (!token) return null;
-
+  
     try {
-      const response = await axios.post(`${API_URL}/api/attendance/check-in`, { sessionCode }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await axios.post(`${API_URL}/api/attendance/check-in`, 
+        { sessionCode }, 
+        {
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
       return response.data;
     } catch (error) {
-      console.error('Error checking in:', error);
-      throw error;
+      console.error('Error checking in:', error.response || error);
+      throw error.response?.data || error;
     }
   },
 
