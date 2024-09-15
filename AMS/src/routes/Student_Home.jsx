@@ -19,7 +19,7 @@ export const Student_Home = () => {
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        const user = await authService.getProfile();
+        const user = await authservice.getProfile();
         if (user) {
           setUserName(user.name || "Student");
           setUserEmail(user.email || "");
