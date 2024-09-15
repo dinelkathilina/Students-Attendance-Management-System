@@ -14,8 +14,10 @@ const QRCodeScanner = ({ onScanSuccess, onScanError }) => {
 
   const handleScan = async (scannedData) => {
     if (scannedData) {
+      console.log('Scanned session code:', scannedData);
       try {
         const response = await authService.checkInToSession(scannedData);
+        console.log('Check-in response:', response);
         onScanSuccess(response);
       } catch (error) {
         console.error('Check-in error:', error);
