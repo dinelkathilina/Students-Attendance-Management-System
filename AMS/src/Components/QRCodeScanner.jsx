@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useZxing } from "react-zxing";
 import authService from '../../services/authservice';
 
@@ -6,11 +6,15 @@ const QRCodeScanner = ({ onScanSuccess, onScanError }) => {
   const [result, setResult] = useState("");
   const [scanStatus, setScanStatus] = useState(null);
   const [isChecking, setIsChecking] = useState(false);
+  const [shouldScan, setShouldScan] = useState(true);
 
   const { ref } = useZxing({
     onDecodeResult(result) {
-      setResult(result.getText());
-      handleScan(result.getText());
+      if (shouldScan) {
+        setResult(result.getText());
+        setShouldScan(false); // Stop scanning after first successful read
+        handleScan(result.getText());
+      }
     },
   });
 
@@ -35,9 +39,21 @@ const QRCodeScanner = ({ onScanSuccess, onScanError }) => {
     }
   };
 
+  const resetScanner = () => {
+    setResult("");
+    setScanStatus(null);
+    setShouldScan(true);
+  };
+
   return (
     <div className="qr-reader-container flex flex-col items-center">
-      <video ref={ref} className="w-full max-w-sm mx-auto rounded-lg shadow-lg" />
+      {shouldScan ? (
+        <video ref={ref} className="w-full max-w-sm mx-auto rounded-lg shadow-lg" />
+      ) : (
+        <div className="w-full max-w-sm mx-auto rounded-lg shadow-lg bg-gray-200 h-64 flex items-center justify-center">
+          <p className="text-gray-600">Scan complete</p>
+        </div>
+      )}
       {result && <p className="mt-2 text-sm text-gray-500">Last scanned: {result}</p>}
       {isChecking && (
         <div className="mt-4 p-4 rounded-lg w-full max-w-sm bg-blue-100 text-blue-700">
@@ -68,6 +84,12 @@ const QRCodeScanner = ({ onScanSuccess, onScanError }) => {
           </div>
         </div>
       )}
+      <button
+        onClick={resetScanner}
+        className="mt-4 text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center"
+      >
+        Scan Again
+      </button>
     </div>
   );
 };
