@@ -163,7 +163,7 @@ const authservice = {
 
   checkInToSession: async (sessionCode) => {
     const token = localStorage.getItem('token');
-    if (!token) return null;
+    if (!token) throw new Error("No authentication token found");
   
     try {
       const response = await axios.post(`${API_URL}/api/attendance/check-in`, 
@@ -178,7 +178,11 @@ const authservice = {
       return response.data;
     } catch (error) {
       console.error('Error checking in:', error.response || error);
-      throw error.response?.data || error;
+      if (error.response && error.response.data) {
+        throw new Error(error.response.data);
+      } else {
+        throw error;
+      }
     }
   },
 
