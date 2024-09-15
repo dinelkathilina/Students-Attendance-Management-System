@@ -67,13 +67,16 @@ export const Student_Home = () => {
   const handleScanError = (error) => {
     setIsScanning(false);
     let errorMessage = "An error occurred while scanning";
-
-    if (error instanceof Error) {
+  
+    if (error.response && error.response.data) {
+      // API error response
+      errorMessage = error.response.data.message || error.response.data;
+    } else if (error instanceof Error) {
       errorMessage = error.message;
     } else if (typeof error === 'string') {
       errorMessage = error;
     }
-
+  
     console.error("Scan error:", errorMessage);
     showToast(errorMessage, "error");
   };
