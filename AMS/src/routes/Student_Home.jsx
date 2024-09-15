@@ -255,6 +255,12 @@ export const Student_Home = () => {
         </aside>
 
         <main class="p-4 md:ml-64 h-auto pt-20">
+        <Toast
+        message={toast.message}
+        type={toast.type}
+        show={toast.show}
+        onClose={closeToast}
+      />
         <div className="border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-600 p-4 mb-4 flex flex-col justify-center items-center">
             {!isScanning ? (
               <button
@@ -309,12 +315,7 @@ export const Student_Home = () => {
           </div>
         </main>
       </div>
-      <Toast
-        message={toast.message}
-        type={toast.type}
-        show={toast.show}
-        onClose={closeToast}
-      />
+      
     </>
   );
 };
