@@ -179,13 +179,14 @@ const authservice = {
     } catch (error) {
       console.error('Error checking in:', error.response || error);
       if (error.response && error.response.data) {
-        throw new Error(error.response.data);
+        throw new Error(typeof error.response.data === 'string' ? error.response.data : JSON.stringify(error.response.data));
+      } else if (error.message) {
+        throw new Error(error.message);
       } else {
-        throw error;
+        throw new Error('An unknown error occurred');
       }
     }
   },
-
 
   // Add more auth-related functions as needed
 };
