@@ -1,4 +1,4 @@
-import { useState, useEffect , useCallback} from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { initFlowbite } from "flowbite";
 import QRCodeScanner from "../Components/QRCodeScanner";
@@ -54,21 +54,29 @@ export const Student_Home = () => {
     setIsScanning(true);
   };
 
-  const handleScanSuccess = (response) => {
+  const handleScanSuccess = async (scannedData) => {
     setIsScanning(false);
-    showToast(response.message, "success");
+    try {
+      const response = await authservice.checkInToSession(scannedData);
+      showToast(response.message, "success");
+    } catch (error) {
+      handleScanError(error);
+    }
   };
 
   const handleScanError = (error) => {
     setIsScanning(false);
     let errorMessage = "An error occurred while scanning";
-    if (typeof error === 'string') {
+
+    if (typeof error === "string") {
       errorMessage = error;
     } else if (error.response && error.response.data) {
       errorMessage = error.response.data;
     } else if (error.message) {
       errorMessage = error.message;
     }
+
+    console.error("Scan error:", errorMessage);
     showToast(errorMessage, "error");
   };
 
@@ -270,7 +278,7 @@ export const Student_Home = () => {
         </aside>
 
         <main class="p-4 md:ml-64 h-auto pt-20">
-        <Toast
+          <Toast
             key={toast.message}
             message={toast.message}
             type={toast.type}
@@ -282,7 +290,7 @@ export const Student_Home = () => {
             {!isScanning ? (
               <button
                 type="button"
-                onClick={handleScanClick}
+                onClick={() => setIsScanning(true)}
                 className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
               >
                 <svg
