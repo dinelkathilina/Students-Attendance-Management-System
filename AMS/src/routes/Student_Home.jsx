@@ -2,17 +2,11 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { initFlowbite } from "flowbite";
 import authservice from "../../services/authservice";
-import Toast from "../Components/Toast";
-import QRScannerModal from "../Components/QRScannerModal";
+
 export const Student_Home = () => {
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
-  const [isScanning, setIsScanning] = useState(false);
-  const [toast, setToast] = useState({
-    show: false,
-    message: "",
-    type: "success",
-  });
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -37,24 +31,7 @@ export const Student_Home = () => {
     initFlowbite();
   }, [navigate]);
 
-  const showToast = useCallback((message, type = "success") => {
-    setToast({ show: true, message, type });
-    setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 3000);
-  }, []);
 
-  const handleScanSuccess = useCallback(
-    async (result) => {
-      setIsScanning(false);
-      try {
-        const response = await authservice.checkInToSession(result);
-        showToast(response.message || "Check-in successful", "success");
-      } catch (error) {
-        console.error("Check-in error:", error);
-        showToast(error.message || "Failed to check in", "error");
-      }
-    },
-    [showToast]
-  );
 
   const handleLogout = useCallback(() => {
     authservice.logout();
@@ -259,46 +236,7 @@ export const Student_Home = () => {
         </aside>
 
         <main className="p-4 md:ml-64 h-auto pt-20">
-          <Toast
-            message={toast.message}
-            type={toast.type}
-            show={toast.show}
-            onClose={() => setToast((prev) => ({ ...prev, show: false }))}
-          />
-
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-              Attendance Check-In
-            </h2>
-            <div className="flex flex-col items-center justify-center">
-              <button
-                onClick={() => setIsScanning(true)}
-                className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="w-5 h-5 mr-2 -ml-1"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 4v1m6 11h2m-6 0h-2v4m0-11v-4m6 0h-2m2 0v4m-6 0h-2m2 0v4m-6-4h2m-2 0v4m6-4h2m-2 0v4m6-4h2m-2 0v4m0-11h2m-2 0v4"
-                  />
-                </svg>
-                Scan QR Code
-              </button>
-            </div>
-          </div>
-
-          <QRScannerModal
-            isOpen={isScanning}
-            onClose={() => setIsScanning(false)}
-            onScanSuccess={handleScanSuccess}
-          />
+          
         </main>
       </div>
     </>
