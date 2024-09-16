@@ -11,16 +11,24 @@ export const QRScanner = ({ onClose, onCheckIn }) => {
   useEffect(() => {
     const codeReader = new BrowserMultiFormatReader();
     let mounted = true;
-    let scanInterval;
 
     const startScanning = async () => {
       try {
         const videoInputDevices = await codeReader.listVideoInputDevices();
-        const selectedCamera = videoInputDevices[0];
+        console.log('Available cameras:', videoInputDevices);
+
+        // Try to find a rear-facing camera
+        const rearCamera = videoInputDevices.find(device => 
+          /(back|rear)/i.test(device.label)
+        );
+
+        const selectedCamera = rearCamera || videoInputDevices[0];
 
         if (!selectedCamera) {
           throw new Error('No camera found');
         }
+
+        console.log('Selected camera:', selectedCamera.label);
 
         await codeReader.decodeFromVideoDevice(selectedCamera.deviceId, videoRef.current, (result, err) => {
           if (!mounted) return;
@@ -50,7 +58,6 @@ export const QRScanner = ({ onClose, onCheckIn }) => {
 
     return () => {
       mounted = false;
-      clearInterval(scanInterval);
       codeReader.reset();
     };
   }, [onCheckIn]);
