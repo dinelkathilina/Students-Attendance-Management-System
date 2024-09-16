@@ -2,10 +2,14 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { initFlowbite } from "flowbite";
 import authservice from "../../services/authservice";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { QRScanner } from "../Components/QRScanner ";
 
 export const Student_Home = () => {
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
+  const [showScanner, setShowScanner] = useState(false);
 
   const navigate = useNavigate();
 
@@ -17,12 +21,12 @@ export const Student_Home = () => {
           setUserName(user.name || "Student");
           setUserEmail(user.email || "");
         } else {
-          showToast("Failed to load user profile", "error");
+          toast.error("Failed to load user profile");
           navigate("/");
         }
       } catch (error) {
         console.error("Error fetching user profile:", error);
-        showToast("An error occurred while loading your profile", "error");
+        toast.error("An error occurred while loading your profile");
         navigate("/");
       }
     };
@@ -31,13 +35,20 @@ export const Student_Home = () => {
     initFlowbite();
   }, [navigate]);
 
-
-
   const handleLogout = useCallback(() => {
     authservice.logout();
     navigate("/");
   }, [navigate]);
 
+  const toggleScanner = () => setShowScanner(!showScanner);
+
+  const handleCheckIn = (message, isError = false) => {
+    if (isError) {
+      toast.error(message);
+    } else {
+      toast.success(message);
+    }
+  };
   return (
     <>
       <div class="antialiased bg-gray-50 dark:bg-gray-900">
@@ -179,6 +190,32 @@ export const Student_Home = () => {
                   <span class="ml-3">Manage Courses</span>
                 </a>
               </li>*/}
+
+              {/* QR Scannner */}
+              <li>
+                <button
+                  onClick={toggleScanner}
+                  className="flex items-center p-2 w-full text-base font-medium text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group"
+                >
+                  <svg
+                    className="w-6 h-6 text-gray-800 dark:text-white"
+                    aria-hidden="true"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 4v1m6 11h2m-6 0h-2v4m0-11v-4m0 4h4m-4 0l4-4m-4 4l4 4m-6-1h2M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                    />
+                  </svg>
+                  <span className="ml-3">Scan QR Code</span>
+                </button>
+              </li>
+
               {/* Attendance Report */}
               <li>
                 <a
@@ -235,9 +272,21 @@ export const Student_Home = () => {
           </div>
         </aside>
 
-        <main className="p-4 md:ml-64 h-auto pt-20">
-          
-        </main>
+        <main className="p-4 md:ml-64 h-auto pt-20"></main>
+        {showScanner && (
+          <QRScanner onClose={toggleScanner} onCheckIn={handleCheckIn} />
+        )}
+        <ToastContainer
+          position="top-right"
+          autoClose={5000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+        />
       </div>
     </>
   );
