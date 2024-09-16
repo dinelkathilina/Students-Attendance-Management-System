@@ -8,14 +8,13 @@ export const QRScanner = ({ onClose, onCheckIn }) => {
   const [selectedCamera, setSelectedCamera] = useState('');
 
   useEffect(() => {
-    const codeReader = new BrowserQRCodeReader();
-
-    const setupScanner = async () => {
+    const getCameras = async () => {
       try {
-        const videoInputDevices = await BrowserQRCodeReader.listVideoInputDevices();
-        setCameras(videoInputDevices);
-        if (videoInputDevices.length > 0) {
-          setSelectedCamera(videoInputDevices[0].deviceId);
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(device => device.kind === 'videoinput');
+        setCameras(videoDevices);
+        if (videoDevices.length > 0) {
+          setSelectedCamera(videoDevices[0].deviceId);
         }
       } catch (err) {
         console.error('Failed to list video devices', err);
@@ -23,29 +22,42 @@ export const QRScanner = ({ onClose, onCheckIn }) => {
       }
     };
 
-    setupScanner();
-
-    return () => {
-      codeReader.reset();
-    };
+    getCameras();
   }, []);
 
   useEffect(() => {
     if (selectedCamera && videoRef.current) {
       const codeReader = new BrowserQRCodeReader();
-      codeReader.decodeFromVideoDevice(selectedCamera, videoRef.current, (result, err) => {
-        if (result) {
-          onCheckIn(result.getText());
+      
+      const startScanning = async () => {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: { deviceId: selectedCamera }
+          });
+          videoRef.current.srcObject = stream;
+          
+          codeReader.decodeFromVideoDevice(selectedCamera, videoRef.current, (result, err) => {
+            if (result) {
+              onCheckIn(result.getText());
+            }
+            if (err && !(err instanceof TypeError)) {
+              console.error('Failed to decode', err);
+              setError('Failed to decode QR code');
+            }
+          });
+        } catch (err) {
+          console.error('Error accessing the camera', err);
+          setError('Failed to access camera');
         }
-        if (err && !(err instanceof TypeError)) {
-          // Ignoring TypeError as it's thrown continuously when no QR code is detected
-          console.error('Failed to decode', err);
-          setError('Failed to decode QR code');
-        }
-      });
+      };
+
+      startScanning();
 
       return () => {
         codeReader.reset();
+        if (videoRef.current && videoRef.current.srcObject) {
+          videoRef.current.srcObject.getTracks().forEach(track => track.stop());
+        }
       };
     }
   }, [selectedCamera, onCheckIn]);
@@ -59,7 +71,7 @@ export const QRScanner = ({ onClose, onCheckIn }) => {
       <div className="bg-white p-4 rounded-lg max-w-sm w-full">
         <h2 className="text-xl font-bold mb-4">Scan QR Code</h2>
         {error && <p className="text-red-500 mb-2">{error}</p>}
-        <video ref={videoRef} className="w-full mb-4" />
+        <video ref={videoRef} className="w-full mb-4" autoPlay playsInline />
         {cameras.length > 1 && (
           <select 
             value={selectedCamera} 
