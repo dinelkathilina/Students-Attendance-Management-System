@@ -1,13 +1,13 @@
-// QRScanner.jsx
-import React, { useEffect, useRef, useState } from 'react';
-import { BrowserMultiFormatReader } from '@zxing/library';
-import { toast } from 'react-toastify';
+import React, { useEffect, useRef, useState } from "react";
+import { BrowserMultiFormatReader } from "@zxing/library";
+import { toast } from "react-toastify";
 
 export const QRScanner = ({ onClose, onCheckIn }) => {
   const videoRef = useRef(null);
   const [error, setError] = useState(null);
   const [isScanning, setIsScanning] = useState(false);
   const [lastScannedCode, setLastScannedCode] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const codeReader = new BrowserMultiFormatReader();
@@ -16,29 +16,22 @@ export const QRScanner = ({ onClose, onCheckIn }) => {
     const startScanning = async () => {
       try {
         const videoInputDevices = await codeReader.listVideoInputDevices();
-        console.log('Available cameras:', videoInputDevices);
-
-        // Try to find a rear-facing camera
-        const rearCamera = videoInputDevices.find(device => 
+        const rearCamera = videoInputDevices.find((device) =>
           /(back|rear)/i.test(device.label)
         );
-
         const selectedCamera = rearCamera || videoInputDevices[0];
 
         if (!selectedCamera) {
-          throw new Error('No camera found');
+          throw new Error("No camera found");
         }
 
-        console.log('Selected camera:', selectedCamera.label);
-
         await codeReader.decodeFromVideoDevice(
-          selectedCamera.deviceId, 
-          videoRef.current, 
+          selectedCamera.deviceId,
+          videoRef.current,
           (result, err) => {
             if (!mounted) return;
 
             if (result) {
-              console.log('QR code scanned:', result.getText());
               setLastScannedCode(result.getText());
               if (isScanning) {
                 setIsScanning(false);
@@ -47,23 +40,25 @@ export const QRScanner = ({ onClose, onCheckIn }) => {
             }
 
             if (err && !(err instanceof TypeError)) {
-              console.debug('QR scan attempt failed', err);
+              console.debug("QR scan attempt failed", err);
             }
           }
         );
 
-        // Start scanning after a delay
-        setTimeout(() => setIsScanning(true), 2000);
-
+        setTimeout(() => {
+          setIsLoading(false);
+          setIsScanning(true);
+        }, 2000);
       } catch (err) {
-        console.error('Error accessing the camera', err);
-        setError('Failed to access camera: ' + err.message);
-        toast.error('Failed to access camera. Please check your camera permissions.');
-        onClose(); // Close the scanner on error
+        console.error("Error accessing the camera", err);
+        setError("Failed to access camera: " + err.message);
+        toast.error(
+          "Failed to access camera. Please check your camera permissions."
+        );
+        onClose();
       }
     };
 
-    // Delay starting the scanner to allow component to mount fully
     setTimeout(startScanning, 1000);
 
     return () => {
@@ -76,33 +71,58 @@ export const QRScanner = ({ onClose, onCheckIn }) => {
     if (lastScannedCode) {
       onCheckIn(lastScannedCode);
     } else {
-      toast.error('No QR code has been scanned yet');
+      toast.error("No QR code has been scanned yet");
     }
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white p-4 rounded-lg max-w-sm w-full">
-        <h2 className="text-xl font-bold mb-4">Scan QR Code</h2>
-        {error && <p className="text-red-500 mb-2">{error}</p>}
-        <video ref={videoRef} className="w-full mb-4" />
-        <p className="text-sm text-gray-600 mb-4">
-          {isScanning ? "Scanner is active. Point your camera at a QR code." : "Preparing scanner..."}
+      <div className="bg-white p-6 rounded-lg max-w-md w-full">
+        <h2 className="text-2xl font-bold mb-6 text-center">Scan QR Code</h2>
+        {error && <p className="text-red-500 mb-4">{error}</p>}
+        <div className="relative mb-6">
+          <video ref={videoRef} className="w-full rounded-lg" />
+          <div className="absolute inset-0 border-2 border-dashed border-blue-500 rounded-lg"></div>
+          {isLoading && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+            </div>
+          )}
+        </div>
+        <p className="text-sm text-gray-600 mb-6 text-center">
+          {isScanning
+            ? "Scanner is active. Point your camera at a QR code."
+            : "Preparing scanner..."}
         </p>
         {lastScannedCode && (
-          <p className="text-sm text-gray-600 mb-4">
-            Last scanned code: {lastScannedCode}
+          <p className="text-sm text-gray-600 mb-6 text-center">
+            scanned code: {lastScannedCode}
           </p>
         )}
         <button
           onClick={handleManualCheckIn}
-          className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 mb-2"
+          className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 mb-4 flex items-center justify-center"
+          disabled={!lastScannedCode}
         >
-          Check In with Last Scanned Code
+          <svg
+            className="w-5 h-5 mr-2"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 5l7 7-7 7"
+            />
+          </svg>
+          Use Scanned Code
         </button>
         <button
           onClick={onClose}
-          className="w-full bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700"
+          className="w-full bg-gray-200 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-300"
         >
           Close Scanner
         </button>
