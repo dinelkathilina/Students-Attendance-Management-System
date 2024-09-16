@@ -45,8 +45,6 @@ export const Student_Home = () => {
   const toggleScanner = () => setShowScanner(!showScanner);
 
   const handleCheckIn = async (qrCode) => {
-    setShowScanner(false); // Close scanner immediately after scan
-  
     try {
       const response = await authservice.checkIn(qrCode);
       toast.success(response.message);
@@ -68,6 +66,8 @@ export const Student_Home = () => {
       } else {
         toast.error("An unexpected error occurred. Please try again later.");
       }
+    } finally {
+      setShowScanner(false); // Always close the scanner after check-in attempt
     }
   };
   return (

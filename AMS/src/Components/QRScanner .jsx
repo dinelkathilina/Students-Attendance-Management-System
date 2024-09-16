@@ -50,6 +50,7 @@ export const QRScanner = ({ onClose, onCheckIn }) => {
         console.error('Error accessing the camera', err);
         setError('Failed to access camera: ' + err.message);
         toast.error('Failed to access camera. Please check your camera permissions.');
+        onClose(); // Close the scanner on error
       }
     };
 
@@ -60,7 +61,7 @@ export const QRScanner = ({ onClose, onCheckIn }) => {
       mounted = false;
       codeReader.reset();
     };
-  }, [onCheckIn]);
+  }, [onCheckIn, onClose]);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
