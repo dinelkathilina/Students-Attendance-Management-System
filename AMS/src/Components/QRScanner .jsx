@@ -44,6 +44,7 @@ export const QRScanner = ({ onClose, onCheckIn }) => {
 
   const handleError = (err) => {
     console.error(err);
+    setError('Error scanning QR code: ' + err.message);
     onCheckIn('Error scanning QR code', true);
   };
 
@@ -64,7 +65,9 @@ export const QRScanner = ({ onClose, onCheckIn }) => {
             delay={300}
             onError={handleError}
             onScan={handleScan}
-            constraints={{ deviceId: currentCamera.deviceId }}
+            constraints={{
+              video: { deviceId: currentCamera.deviceId }
+            }}
             style={{ width: '100%' }}
           />
         ) : (
