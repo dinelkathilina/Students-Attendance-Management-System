@@ -1,13 +1,17 @@
+// QRScanner.jsx
 import React, { useEffect, useRef, useState } from 'react';
 import { BrowserMultiFormatReader } from '@zxing/library';
+import { toast } from 'react-toastify';
 
 export const QRScanner = ({ onClose, onCheckIn }) => {
   const videoRef = useRef(null);
   const [error, setError] = useState(null);
+  const [isScanning, setIsScanning] = useState(true);
 
   useEffect(() => {
     const codeReader = new BrowserMultiFormatReader();
     let mounted = true;
+    let cooldown = false;
 
     const startScanning = async () => {
       try {
@@ -17,13 +21,18 @@ export const QRScanner = ({ onClose, onCheckIn }) => {
         ) || videoInputDevices[0];
 
         if (!rearCamera) {
-          throw new Error('No rear camera found');
+          throw new Error('No camera found');
         }
 
         await codeReader.decodeFromVideoDevice(rearCamera.deviceId, videoRef.current, (result, err) => {
-          if (result && mounted) {
+          if (result && mounted && isScanning && !cooldown) {
+            setIsScanning(false);
             onCheckIn(result.getText());
-            onClose(); // Close the scanner after successful scan
+            cooldown = true;
+            setTimeout(() => {
+              cooldown = false;
+              if (mounted) setIsScanning(true);
+            }, 5000); // 5 second cooldown
           }
           if (err && !(err instanceof TypeError) && mounted) {
             // Only log the error, don't set it to state to avoid continuous re-renders
@@ -34,6 +43,7 @@ export const QRScanner = ({ onClose, onCheckIn }) => {
         console.error('Error accessing the camera', err);
         if (mounted) {
           setError('Failed to access camera: ' + err.message);
+          toast.error('Failed to access camera. Please check your camera permissions.');
         }
       }
     };
@@ -44,7 +54,7 @@ export const QRScanner = ({ onClose, onCheckIn }) => {
       mounted = false;
       codeReader.reset();
     };
-  }, [onCheckIn, onClose]);
+  }, [onCheckIn]);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">

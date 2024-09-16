@@ -10,7 +10,7 @@ export const Student_Home = () => {
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [showScanner, setShowScanner] = useState(false);
-  
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -34,14 +34,13 @@ export const Student_Home = () => {
     fetchUserProfile();
     initFlowbite();
     // Test toast
-  toast.info("Welcome to the Student Home page!");
+    toast.info("Welcome to the Student Home page!");
   }, [navigate]);
 
   const handleLogout = useCallback(() => {
     authservice.logout();
     navigate("/");
   }, [navigate]);
-
 
   const toggleScanner = () => setShowScanner(!showScanner);
 
@@ -51,7 +50,37 @@ export const Student_Home = () => {
       toast.success(response.message);
       setShowScanner(false);
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to check in');
+      if (error.response) {
+        switch (error.response.status) {
+          case 400:
+            if (error.response.data.message.includes("already checked in")) {
+              toast.warning("You have already checked in for this session.");
+            } else if (
+              error.response.data.message.includes("Invalid or expired")
+            ) {
+              toast.error("Invalid or expired session code. Please try again.");
+            } else {
+              toast.error(
+                error.response.data.message ||
+                  "An error occurred during check-in."
+              );
+            }
+            break;
+          case 401:
+            toast.error("Unauthorized. Please log in again.");
+            // Optionally, redirect to login page
+            break;
+          default:
+            toast.error(
+              "An unexpected error occurred. Please try again later."
+            );
+        }
+      } else {
+        toast.error(
+          "Network error. Please check your connection and try again."
+        );
+      }
+      console.error("Error checking in:", error);
     }
   };
   return (
@@ -279,7 +308,10 @@ export const Student_Home = () => {
 
         <main className="p-4 md:ml-64 h-auto pt-20"></main>
         {showScanner && (
-          <QRScanner onClose={toggleScanner} onCheckIn={handleCheckIn} />
+          <QRScanner
+            onClose={() => setShowScanner(false)}
+            onCheckIn={handleCheckIn}
+          />
         )}
         <ToastContainer
           position="top-right"
