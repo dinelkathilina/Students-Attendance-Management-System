@@ -1,10 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { initFlowbite } from "flowbite";
-import QRCodeScanner from "../Components/QRCodeScanner";
 import authservice from "../../services/authservice";
 import Toast from "../Components/Toast";
-
+import QRScannerModal from "../Components/QRScannerModal";
 export const Student_Home = () => {
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
