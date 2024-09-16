@@ -6,52 +6,51 @@ import { toast } from 'react-toastify';
 export const QRScanner = ({ onClose, onCheckIn }) => {
   const videoRef = useRef(null);
   const [error, setError] = useState(null);
-  const [isScanning, setIsScanning] = useState(true);
+  const [isScanning, setIsScanning] = useState(false);
 
   useEffect(() => {
     const codeReader = new BrowserMultiFormatReader();
     let mounted = true;
-    let cooldown = false;
+    let scanInterval;
 
     const startScanning = async () => {
       try {
         const videoInputDevices = await codeReader.listVideoInputDevices();
-        const rearCamera = videoInputDevices.find(device => 
-          /(back|rear)/i.test(device.label)
-        ) || videoInputDevices[0];
+        const selectedCamera = videoInputDevices[0];
 
-        if (!rearCamera) {
+        if (!selectedCamera) {
           throw new Error('No camera found');
         }
 
-        await codeReader.decodeFromVideoDevice(rearCamera.deviceId, videoRef.current, (result, err) => {
-          if (result && mounted && isScanning && !cooldown) {
+        await codeReader.decodeFromVideoDevice(selectedCamera.deviceId, videoRef.current, (result, err) => {
+          if (!mounted) return;
+
+          if (result && isScanning) {
             setIsScanning(false);
             onCheckIn(result.getText());
-            cooldown = true;
-            setTimeout(() => {
-              cooldown = false;
-              if (mounted) setIsScanning(true);
-            }, 5000); // 5 second cooldown
           }
-          if (err && !(err instanceof TypeError) && mounted) {
-            // Only log the error, don't set it to state to avoid continuous re-renders
-            console.error('Failed to decode', err);
+
+          if (err && !(err instanceof TypeError)) {
+            console.debug('QR scan attempt failed', err);
           }
         });
+
+        // Start scanning after a delay
+        setTimeout(() => setIsScanning(true), 2000);
+
       } catch (err) {
         console.error('Error accessing the camera', err);
-        if (mounted) {
-          setError('Failed to access camera: ' + err.message);
-          toast.error('Failed to access camera. Please check your camera permissions.');
-        }
+        setError('Failed to access camera: ' + err.message);
+        toast.error('Failed to access camera. Please check your camera permissions.');
       }
     };
 
-    startScanning();
+    // Delay starting the scanner to allow component to mount fully
+    setTimeout(startScanning, 1000);
 
     return () => {
       mounted = false;
+      clearInterval(scanInterval);
       codeReader.reset();
     };
   }, [onCheckIn]);
@@ -62,6 +61,9 @@ export const QRScanner = ({ onClose, onCheckIn }) => {
         <h2 className="text-xl font-bold mb-4">Scan QR Code</h2>
         {error && <p className="text-red-500 mb-2">{error}</p>}
         <video ref={videoRef} className="w-full mb-4" />
+        <p className="text-sm text-gray-600 mb-4">
+          {isScanning ? "Scanner is active. Point your camera at a QR code." : "Preparing scanner..."}
+        </p>
         <button
           onClick={onClose}
           className="w-full bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700"

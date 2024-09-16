@@ -45,42 +45,29 @@ export const Student_Home = () => {
   const toggleScanner = () => setShowScanner(!showScanner);
 
   const handleCheckIn = async (qrCode) => {
+    setShowScanner(false); // Close scanner immediately after scan
+  
     try {
       const response = await authservice.checkIn(qrCode);
       toast.success(response.message);
-      setShowScanner(false);
     } catch (error) {
+      console.error('Error checking in:', error);
+      
       if (error.response) {
-        switch (error.response.status) {
-          case 400:
-            if (error.response.data.message.includes("already checked in")) {
-              toast.warning("You have already checked in for this session.");
-            } else if (
-              error.response.data.message.includes("Invalid or expired")
-            ) {
-              toast.error("Invalid or expired session code. Please try again.");
-            } else {
-              toast.error(
-                error.response.data.message ||
-                  "An error occurred during check-in."
-              );
-            }
-            break;
-          case 401:
-            toast.error("Unauthorized. Please log in again.");
-            // Optionally, redirect to login page
-            break;
-          default:
-            toast.error(
-              "An unexpected error occurred. Please try again later."
-            );
+        const errorMessage = error.response.data.message;
+        
+        if (errorMessage.includes("already checked in")) {
+          toast.warning("You have already checked in for this session.");
+        } else if (errorMessage.includes("Invalid or expired")) {
+          toast.error("Invalid or expired session code. Please try again.");
+        } else {
+          toast.error(errorMessage || "An error occurred during check-in.");
         }
+      } else if (error.request) {
+        toast.error("Network error. Please check your connection and try again.");
       } else {
-        toast.error(
-          "Network error. Please check your connection and try again."
-        );
+        toast.error("An unexpected error occurred. Please try again later.");
       }
-      console.error("Error checking in:", error);
     }
   };
   return (
