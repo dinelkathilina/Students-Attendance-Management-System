@@ -44,6 +44,7 @@ export const Student_Home = () => {
 
   const handleScanSuccess = useCallback(
     async (result) => {
+      setIsScanning(false);
       try {
         const response = await authservice.checkInToSession(result);
         showToast(response.message || "Check-in successful", "success");
@@ -263,7 +264,6 @@ export const Student_Home = () => {
             type={toast.type}
             show={toast.show}
             onClose={() => setToast((prev) => ({ ...prev, show: false }))}
-            position="top-right"
           />
 
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">

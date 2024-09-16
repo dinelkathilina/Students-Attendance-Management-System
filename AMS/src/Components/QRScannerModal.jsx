@@ -19,7 +19,13 @@ const QRScannerModal = ({ isOpen, onClose, onScanSuccess }) => {
           onScanSuccess(decodedText);
           scanner.stop().then(() => onClose());
         },
-        (error) => console.error(error)
+        (error) => {
+          // Ignore specific errors that occur during scanning
+          if (error !== "QR code parse error, error = No barcode or QR code detected." &&
+              error !== "No MultiFormat Readers were able to detect the code.") {
+            console.error(error);
+          }
+        }
       )
       .catch((err) => console.error(err));
     }
