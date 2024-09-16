@@ -10,7 +10,7 @@ export const Student_Home = () => {
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [showScanner, setShowScanner] = useState(false);
-
+  
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -40,13 +40,16 @@ export const Student_Home = () => {
     navigate("/");
   }, [navigate]);
 
+
   const toggleScanner = () => setShowScanner(!showScanner);
 
-  const handleCheckIn = (message, isError = false) => {
-    if (isError) {
-      toast.error(message);
-    } else {
-      toast.success(message);
+  const handleCheckIn = async (qrCode) => {
+    try {
+      const response = await authservice.checkIn(qrCode);
+      toast.success(response.message);
+      setShowScanner(false);
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to check in');
     }
   };
   return (
