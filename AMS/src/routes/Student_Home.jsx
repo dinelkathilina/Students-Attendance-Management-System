@@ -45,14 +45,20 @@ export const Student_Home = () => {
   const toggleScanner = () => setShowScanner(!showScanner);
 
   const handleCheckIn = async (qrCode) => {
+    setShowScanner(false); // Close scanner immediately after scan
+    
+    console.log('Attempting check-in with code:', qrCode);
+  
     try {
       const response = await authservice.checkIn(qrCode);
+      console.log('Check-in response:', response);
       toast.success(response.message);
     } catch (error) {
       console.error('Error checking in:', error);
       
       if (error.response) {
         const errorMessage = error.response.data.message;
+        console.log('Error response:', error.response);
         
         if (errorMessage.includes("already checked in")) {
           toast.warning("You have already checked in for this session.");
@@ -62,12 +68,11 @@ export const Student_Home = () => {
           toast.error(errorMessage || "An error occurred during check-in.");
         }
       } else if (error.request) {
+        console.log('Error request:', error.request);
         toast.error("Network error. Please check your connection and try again.");
       } else {
         toast.error("An unexpected error occurred. Please try again later.");
       }
-    } finally {
-      setShowScanner(false); // Always close the scanner after check-in attempt
     }
   };
   return (
