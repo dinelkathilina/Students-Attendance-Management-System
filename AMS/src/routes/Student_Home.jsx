@@ -57,15 +57,15 @@ export const Student_Home = () => {
       console.error('Error checking in:', error);
       
       if (error.response) {
-        const errorMessage = error.response.data.message;
-        console.log('Error response:', error.response);
+        const errorMessage = error.response.data;
+        console.log('Error response:', errorMessage);
         
-        if (errorMessage.includes("already checked in")) {
-          toast.warning("You have already checked in for this session.");
-        } else if (errorMessage.includes("Invalid or expired")) {
-          toast.error("Invalid or expired session code. Please try again.");
+        if (typeof errorMessage === 'string') {
+          toast.error(errorMessage);
+        } else if (errorMessage.message) {
+          toast.error(errorMessage.message);
         } else {
-          toast.error(errorMessage || "An error occurred during check-in.");
+          toast.error("An error occurred during check-in.");
         }
       } else if (error.request) {
         console.log('Error request:', error.request);
