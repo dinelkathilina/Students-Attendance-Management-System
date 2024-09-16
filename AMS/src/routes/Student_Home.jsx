@@ -33,6 +33,8 @@ export const Student_Home = () => {
 
     fetchUserProfile();
     initFlowbite();
+    // Test toast
+  toast.info("Welcome to the Student Home page!");
   }, [navigate]);
 
   const handleLogout = useCallback(() => {
