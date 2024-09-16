@@ -38,49 +38,29 @@ export const Student_Home = () => {
     initFlowbite();
   }, [navigate]);
 
-  const handleLogout = () => {
-    navigate("/logout");
-  };
-
-  const showToast = useCallback((message, type) => {
+  const showToast = useCallback((message, type = "success") => {
     setToast({ show: true, message, type });
     setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 3000);
   }, []);
 
-  const handleScanSuccess = async (result) => {
-    setIsScanning(false);
-    try {
-      const response = await authservice.checkInToSession(result);
-      if (response && response.message) {
-        showToast(response.message, "success");
-      } else {
-        showToast("Check-in successful, but no message received", "success");
+  const handleScanSuccess = useCallback(
+    async (result) => {
+      try {
+        const response = await authservice.checkInToSession(result);
+        showToast(response.message || "Check-in successful", "success");
+      } catch (error) {
+        console.error("Check-in error:", error);
+        showToast(error.message || "Failed to check in", "error");
       }
-    } catch (error) {
-      console.error("Check-in error:", error);
-      if (error.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
-        if (error.response.status === 400) {
-          showToast("Invalid or expired session code. Please try again.", "error");
-        } else {
-          showToast(`Server error: ${error.response.data.message || error.response.statusText}`, "error");
-        }
-      } else if (error.request) {
-        // The request was made but no response was received
-        showToast("No response from server. Please check your connection and try again.", "error");
-      } else {
-        // Something happened in setting up the request that triggered an Error
-        showToast(`Error: ${error.message}`, "error");
-      }
-    }
-  };
+    },
+    [showToast]
+  );
 
-  const handleScanError = (error) => {
-    setIsScanning(false);
-    console.error("Scan error:", error);
-    showToast("Failed to scan QR code", "error");
-  };
+  const handleLogout = useCallback(() => {
+    authservice.logout();
+    navigate("/");
+  }, [navigate]);
+
   return (
     <>
       <div class="antialiased bg-gray-50 dark:bg-gray-900">
@@ -279,76 +259,47 @@ export const Student_Home = () => {
         </aside>
 
         <main className="p-4 md:ml-64 h-auto pt-20">
-          {/* Toast notification */}
           <Toast
             message={toast.message}
             type={toast.type}
             show={toast.show}
             onClose={() => setToast((prev) => ({ ...prev, show: false }))}
+            position="top-right"
           />
 
-          {/* QR Code Scanning Section */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
               Attendance Check-In
             </h2>
             <div className="flex flex-col items-center justify-center">
-              {!isScanning ? (
-                <button
-                  onClick={() => setIsScanning(true)}
-                  className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+              <button
+                onClick={() => setIsScanning(true)}
+                className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-5 h-5 mr-2 -ml-1"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="w-5 h-5 mr-2 -ml-1"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 4v1m6 11h2m-6 0h-2v4m0-11v-4m6 0h-2m2 0v4m-6 0h-2m2 0v4m-6-4h2m-2 0v4m0-11h2m-2 0v4m6-4h2m-2 0v4m6-4h2m-2 0v4m0-11h2m-2 0v4"
-                    />
-                  </svg>
-                  Scan QR Code
-                </button>
-              ) : (
-                <div className="w-full max-w-md">
-                  <QRCodeScanner
-                    onScanSuccess={handleScanSuccess}
-                    onScanError={handleScanError}
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v1m6 11h2m-6 0h-2v4m0-11v-4m6 0h-2m2 0v4m-6 0h-2m2 0v4m-6-4h2m-2 0v4m6-4h2m-2 0v4m6-4h2m-2 0v4m0-11h2m-2 0v4"
                   />
-                  <button
-                    onClick={() => setIsScanning(false)}
-                    className="mt-4 w-full text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-red-500 dark:hover:bg-red-600 dark:focus:ring-red-900"
-                  >
-                    Cancel Scanning
-                  </button>
-                </div>
-              )}
+                </svg>
+                Scan QR Code
+              </button>
             </div>
           </div>
 
-          {/* Additional content sections */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Attendance History */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                Recent Attendance
-              </h3>
-              {/* Add attendance history list here */}
-            </div>
-
-            {/* Upcoming Sessions */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                Upcoming Sessions
-              </h3>
-              {/* Add upcoming sessions list here */}
-            </div>
-          </div>
+          <QRScannerModal
+            isOpen={isScanning}
+            onClose={() => setIsScanning(false)}
+            onScanSuccess={handleScanSuccess}
+          />
         </main>
       </div>
     </>
