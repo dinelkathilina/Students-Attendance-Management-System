@@ -4,13 +4,14 @@ import { initFlowbite } from "flowbite";
 import authservice from "../../services/authservice";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import signalRService from "../../services/signalRService";
 import { QRScanner } from "../Components/QRScanner ";
 
 export const Student_Home = () => {
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [showScanner, setShowScanner] = useState(false);
-
+  const [sessionDetails, setSessionDetails] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -46,21 +47,25 @@ export const Student_Home = () => {
 
   const handleCheckIn = async (qrCode) => {
     setShowScanner(false); // Close scanner immediately after scan
-    
-    console.log('Attempting check-in with code:', qrCode);
-  
+
+    console.log("Attempting check-in with code:", qrCode);
+
     try {
       const response = await authservice.checkIn(qrCode);
-      console.log('Check-in response:', response);
+      console.log("Check-in response:", response);
       toast.success(response.message);
+      setSessionDetails(response.sessionDetails);
+
+      // Join the SignalR group for this session
+      await signalRService.joinSession(qrCode);
     } catch (error) {
-      console.error('Error checking in:', error);
-      
+      console.error("Error checking in:", error);
+
       if (error.response) {
         const errorMessage = error.response.data;
-        console.log('Error response:', errorMessage);
-        
-        if (typeof errorMessage === 'string') {
+        console.log("Error response:", errorMessage);
+
+        if (typeof errorMessage === "string") {
           toast.error(errorMessage);
         } else if (errorMessage.message) {
           toast.error(errorMessage.message);
@@ -68,8 +73,10 @@ export const Student_Home = () => {
           toast.error("An error occurred during check-in.");
         }
       } else if (error.request) {
-        console.log('Error request:', error.request);
-        toast.error("Network error. Please check your connection and try again.");
+        console.log("Error request:", error.request);
+        toast.error(
+          "Network error. Please check your connection and try again."
+        );
       } else {
         toast.error("An unexpected error occurred. Please try again later.");
       }
@@ -304,6 +311,20 @@ export const Student_Home = () => {
             onClose={() => setShowScanner(false)}
             onCheckIn={handleCheckIn}
           />
+        )}
+
+        {sessionDetails && (
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <h3 className="text-xl font-bold mb-2">Current Session</h3>
+            <p>Course: {sessionDetails.CourseName}</p>
+            <p>
+              Start Time:{" "}
+              {new Date(sessionDetails.StartTime).toLocaleTimeString()}
+            </p>
+            <p>
+              End Time: {new Date(sessionDetails.EndTime).toLocaleTimeString()}
+            </p>
+          </div>
         )}
         <ToastContainer
           position="top-right"

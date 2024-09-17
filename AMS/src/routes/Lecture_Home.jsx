@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { initFlowbite } from "flowbite";
 import CourseScheduleDisplay from '../Components/CourseScheduleDisplay'
 import authservice from "../../services/authservice";
+import signalRService from "../../services/signalRService";
 export const Lecture_Home = () => {
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
@@ -10,6 +11,9 @@ export const Lecture_Home = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showCoursesTimes, setShowCoursesTimes] = useState(true);
+
+  const [checkedInStudents, setCheckedInStudents] = useState([]);
+  const [currentSession, setCurrentSession] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -28,18 +32,41 @@ export const Lecture_Home = () => {
         const coursesData = await authservice.getLecturerCoursesTime();
         setCourses(coursesData);
         setIsLoading(false);
+
+        // Initialize SignalR connection
+        await signalRService.startConnection();
+        signalRService.onNewCheckIn((attendanceInfo) => {
+          setCheckedInStudents(prev => [...prev, attendanceInfo]);
+        });
       } catch (error) {
-        console.error("Error fetching data:", error);
+        console.error("Error fetching data or initializing SignalR:", error);
         setError("Failed to load data. Please try again later.");
         setIsLoading(false);
       }
     };
+
     fetchData();
     initFlowbite();
 
-    // Set showCoursesTimes based on the current path
     setShowCoursesTimes(location.pathname === "/lecture_home");
+
+    // Clean up SignalR connection on component unmount
+    return () => {
+      signalRService.stopConnection();
+    };
   }, [navigate, location.pathname]);
+
+  const handleCreateSession = async (sessionData) => {
+    try {
+      const response = await authservice.createSession(sessionData);
+      setCurrentSession(response);
+      await signalRService.joinSession(response.sessionCode);
+    } catch (error) {
+      console.error("Error creating session:", error);
+      setError("Failed to create session. Please try again.");
+    }
+  };
+
 
   const handleLogout = () => {
     navigate("/logout");
@@ -303,6 +330,21 @@ export const Lecture_Home = () => {
             <Outlet />
           )}
         </main>
+        {currentSession && (
+    <div className="bg-white p-6 rounded-lg shadow-md mt-4">
+      <h3 className="text-xl font-bold mb-2">Current Session</h3>
+      <p>Session Code: {currentSession.sessionCode}</p>
+      <h4 className="text-lg font-semibold mt-4 mb-2">Checked-in Students</h4>
+      <ul>
+        {checkedInStudents.map((student, index) => (
+          <li key={index}>
+            {student.studentName} - {new Date(student.checkInTime).toLocaleTimeString()}
+          </li>
+        ))}
+      </ul>
+    </div>
+  )}
+
       </div>
     </>
   );
