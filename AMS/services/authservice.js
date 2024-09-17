@@ -154,6 +154,10 @@ const authservice = {
       const response = await axios.post(`${API_URL}/api/session/create`, sessionData, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      
+      // Join the SignalR group for this session
+      await signalRService.joinSession(response.data.sessionCode);
+      
       return response.data;
     } catch (error) {
       console.error('Error creating session:', error);
