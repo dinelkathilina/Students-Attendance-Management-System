@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSession } from "../Context/SessionContext";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { initFlowbite } from "flowbite";
 import CourseScheduleDisplay from "../Components/CourseScheduleDisplay";
