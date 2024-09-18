@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { initFlowbite } from "flowbite";
 import CourseScheduleDisplay from '../Components/CourseScheduleDisplay'
 import authservice from "../../services/authservice";
+import signalRService from "../../services/signalRService";
 export const Lecture_Home = () => {
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
@@ -10,6 +11,9 @@ export const Lecture_Home = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showCoursesTimes, setShowCoursesTimes] = useState(true);
+
+  const [checkedInStudents, setCheckedInStudents] = useState([]);
+  const [currentSession, setCurrentSession] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -28,18 +32,41 @@ export const Lecture_Home = () => {
         const coursesData = await authservice.getLecturerCoursesTime();
         setCourses(coursesData);
         setIsLoading(false);
+
+        // Initialize SignalR connection
+        await signalRService.startConnection();
+        signalRService.onNewCheckIn((attendanceInfo) => {
+          setCheckedInStudents(prev => [...prev, attendanceInfo]);
+        });
       } catch (error) {
-        console.error("Error fetching data:", error);
+        console.error("Error fetching data or initializing SignalR:", error);
         setError("Failed to load data. Please try again later.");
         setIsLoading(false);
       }
     };
+
     fetchData();
     initFlowbite();
 
-    // Set showCoursesTimes based on the current path
     setShowCoursesTimes(location.pathname === "/lecture_home");
+
+    // Clean up SignalR connection on component unmount
+    return () => {
+      signalRService.stopConnection();
+    };
   }, [navigate, location.pathname]);
+
+  const handleCreateSession = async (sessionData) => {
+    try {
+      const response = await authservice.createSession(sessionData);
+      setCurrentSession(response);
+      await signalRService.joinSession(response.sessionCode);
+    } catch (error) {
+      console.error("Error creating session:", error);
+      setError("Failed to create session. Please try again.");
+    }
+  };
+
 
   const handleLogout = () => {
     navigate("/logout");
@@ -285,6 +312,31 @@ export const Lecture_Home = () => {
                   <span class="ml-3">Course Schedules</span>
                 </Link>
               </li>
+              {/* View Live Check-in */}
+              <li>
+                <Link
+                  to="view-check-in"
+                  class="flex items-center p-2 text-base font-medium text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group"
+                >
+                  <svg
+                    class="w-6 h-6 text-gray-800 dark:text-white"
+                    aria-hidden="true"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      fill-rule="evenodd"
+                      d="M5 5a1 1 0 0 0 1-1 1 1 0 1 1 2 0 1 1 0 0 0 1 1h1a1 1 0 0 0 1-1 1 1 0 1 1 2 0 1 1 0 0 0 1 1h1a1 1 0 0 0 1-1 1 1 0 1 1 2 0 1 1 0 0 0 1 1 2 2 0 0 1 2 2v1a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a2 2 0 0 1 2-2ZM3 19v-7a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Zm6.01-6a1 1 0 1 0-2 0 1 1 0 0 0 2 0Zm2 0a1 1 0 1 1 2 0 1 1 0 0 1-2 0Zm6 0a1 1 0 1 0-2 0 1 1 0 0 0 2 0Zm-10 4a1 1 0 1 1 2 0 1 1 0 0 1-2 0Zm6 0a1 1 0 1 0-2 0 1 1 0 0 0 2 0Zm2 0a1 1 0 1 1 2 0 1 1 0 0 1-2 0Z"
+                      clip-rule="evenodd"
+                    />
+                  </svg>
+
+                  <span class="ml-3">View Live Check-in</span>
+                </Link>
+              </li>
             </ul>
           </div>
         </aside>
@@ -303,6 +355,21 @@ export const Lecture_Home = () => {
             <Outlet />
           )}
         </main>
+        {currentSession && (
+    <div className="bg-white p-6 rounded-lg shadow-md mt-4">
+      <h3 className="text-xl font-bold mb-2">Current Session</h3>
+      <p>Session Code: {currentSession.sessionCode}</p>
+      <h4 className="text-lg font-semibold mt-4 mb-2">Checked-in Students</h4>
+      <ul>
+        {checkedInStudents.map((student, index) => (
+          <li key={index}>
+            {student.studentName} - {new Date(student.checkInTime).toLocaleTimeString()}
+          </li>
+        ))}
+      </ul>
+    </div>
+  )}
+
       </div>
     </>
   );

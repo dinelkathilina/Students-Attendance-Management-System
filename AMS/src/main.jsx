@@ -13,6 +13,7 @@ import ManageCourses from "./routes/ManageCourses";
 import { Report } from "./routes/Report";
 import { CourseSchedules } from "./routes/CourseSchedules";
 import "./index.css";
+import LiveChecking from "./routes/LiveChecking";
 const router = createBrowserRouter([
   {
     path: "/",
@@ -46,6 +47,10 @@ const router = createBrowserRouter([
           {
             path: "course_schedules",
             element: <CourseSchedules />,
+          },
+          {
+            path: "view-check-in",
+            element: <LiveChecking/>,
           },
         ],
       },

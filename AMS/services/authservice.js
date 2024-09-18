@@ -184,6 +184,21 @@ const authservice = {
     }
   },
 
+  getCheckedInStudents: async (sessionCode) => {
+    const token = localStorage.getItem('token');
+    if (!token) return null;
+
+    try {
+      const response = await axios.get(`${API_URL}/api/session/checked-in-students/${sessionCode}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching checked-in students:', error);
+      throw error;
+    }
+  },
+
  
 
   // Add more auth-related functions as needed

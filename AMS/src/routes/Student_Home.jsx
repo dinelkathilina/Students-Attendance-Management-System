@@ -4,13 +4,14 @@ import { initFlowbite } from "flowbite";
 import authservice from "../../services/authservice";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import signalRService from "../../services/signalRService";
 import { QRScanner } from "../Components/QRScanner ";
 
 export const Student_Home = () => {
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [showScanner, setShowScanner] = useState(false);
-
+  const [checkInInfo, setCheckInInfo] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -46,21 +47,25 @@ export const Student_Home = () => {
 
   const handleCheckIn = async (qrCode) => {
     setShowScanner(false); // Close scanner immediately after scan
-    
-    console.log('Attempting check-in with code:', qrCode);
-  
+
+    console.log("Attempting check-in with code:", qrCode);
+
     try {
       const response = await authservice.checkIn(qrCode);
-      console.log('Check-in response:', response);
+      console.log("Check-in response:", response);
       toast.success(response.message);
+      setCheckInInfo(response.sessionDetails);
+
+      // Join the SignalR group for this session
+      await signalRService.joinSession(qrCode);
     } catch (error) {
-      console.error('Error checking in:', error);
-      
+      console.error("Error checking in:", error);
+
       if (error.response) {
         const errorMessage = error.response.data;
-        console.log('Error response:', errorMessage);
-        
-        if (typeof errorMessage === 'string') {
+        console.log("Error response:", errorMessage);
+
+        if (typeof errorMessage === "string") {
           toast.error(errorMessage);
         } else if (errorMessage.message) {
           toast.error(errorMessage.message);
@@ -68,8 +73,10 @@ export const Student_Home = () => {
           toast.error("An error occurred during check-in.");
         }
       } else if (error.request) {
-        console.log('Error request:', error.request);
-        toast.error("Network error. Please check your connection and try again.");
+        console.log("Error request:", error.request);
+        toast.error(
+          "Network error. Please check your connection and try again."
+        );
       } else {
         toast.error("An unexpected error occurred. Please try again later.");
       }
@@ -298,13 +305,36 @@ export const Student_Home = () => {
           </div>
         </aside>
 
-        <main className="p-4 md:ml-64 h-auto pt-20"></main>
+        <main className="p-4 md:ml-64 h-auto pt-20">
+        <h2 className="text-3xl font-semibold mb-4">Welcome, {userName}</h2>
+        
+
+        {!showScanner && !checkInInfo && (
+          <button
+            onClick={() => setShowScanner(true)}
+            className="bg-blue-500 hover:bg-blue-600 px-6 py-3 rounded-lg text-lg font-semibold"
+          >
+            Scan QR Code to Check In
+          </button>
+        )}
+
         {showScanner && (
           <QRScanner
             onClose={() => setShowScanner(false)}
             onCheckIn={handleCheckIn}
           />
         )}
+
+        {checkInInfo && (
+          <div className="mt-8 bg-gray-800 p-6 rounded-lg">
+            <h3 className="text-2xl font-semibold mb-4">Check-in Successful</h3>
+            <p><strong>Course:</strong> {checkInInfo.courseName}</p>
+            <p><strong>Start Time:</strong> {new Date(checkInInfo.startTime).toLocaleTimeString()}</p>
+            <p><strong>End Time:</strong> {new Date(checkInInfo.endTime).toLocaleTimeString()}</p>
+          </div>
+        )}
+        </main>
+        
         <ToastContainer
           position="top-right"
           autoClose={5000}
