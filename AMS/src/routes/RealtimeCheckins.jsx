@@ -2,22 +2,41 @@ import React, { useState, useEffect } from 'react';
 import { useSession } from "../Context/SessionContext";
 import signalRService from '../../services/signalRService';
 
- const  RealtimeCheckins = () => {
+const RealtimeCheckins = () => {
   const { sessionData } = useSession();
   const [checkins, setCheckins] = useState([]);
+  const [connectionError, setConnectionError] = useState(null);
 
   useEffect(() => {
-    if (sessionData && sessionData.sessionCode) {
-      signalRService.joinSession(sessionData.sessionCode);
-      
-      signalRService.onNewCheckIn((attendanceInfo) => {
-        setCheckins(prevCheckins => [...prevCheckins, attendanceInfo]);
-      });
-    }
+    let isMounted = true;
+
+    const initializeSignalR = async () => {
+      if (sessionData && sessionData.sessionCode) {
+        try {
+          await signalRService.startConnection();
+          await signalRService.joinSession(sessionData.sessionCode);
+          setConnectionError(null);
+          
+          signalRService.onNewCheckIn((attendanceInfo) => {
+            if (isMounted) {
+              setCheckins(prevCheckins => [...prevCheckins, attendanceInfo]);
+            }
+          });
+        } catch (error) {
+          console.error('Error initializing SignalR:', error);
+          if (isMounted) {
+            setConnectionError('Failed to connect to real-time updates. Please refresh the page.');
+          }
+        }
+      }
+    };
+
+    initializeSignalR();
 
     return () => {
+      isMounted = false;
       if (sessionData && sessionData.sessionCode) {
-        signalRService.leaveSession(sessionData.sessionCode);
+        signalRService.leaveSession(sessionData.sessionCode).catch(console.error);
       }
       signalRService.offNewCheckIn();
     };
@@ -25,6 +44,10 @@ import signalRService from '../../services/signalRService';
 
   if (!sessionData || !sessionData.sessionCode) {
     return <p className="text-white">No active session.</p>;
+  }
+
+  if (connectionError) {
+    return <p className="text-red-500">{connectionError}</p>;
   }
 
   return (
