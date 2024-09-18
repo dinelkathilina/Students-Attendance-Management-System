@@ -46,6 +46,14 @@ class SignalRService {
   offNewCheckIn() {
     this.connection.off("NewCheckIn");
   }
+
+  async leaveSession(sessionCode) {
+    try {
+      await this.connection.invoke("LeaveSession", sessionCode);
+    } catch (err) {
+      console.log(err);
+    }
+  }
 }
 
 export default new SignalRService();
