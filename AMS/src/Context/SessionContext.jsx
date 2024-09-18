@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { useState, useEffect, createContext, useContext } from 'react';
 import signalRService from '../../services/signalRService';
 
 const SessionContext = createContext();
@@ -10,11 +10,6 @@ export const SessionProvider = ({ children }) => {
     const savedSession = localStorage.getItem('sessionData');
     if (savedSession) {
       const parsedSession = JSON.parse(savedSession);
-      if (!parsedSession.timeRemaining) {
-        const now = new Date();
-        const expirationTime = new Date(parsedSession.expirationTime);
-        parsedSession.timeRemaining = Math.max(0, Math.floor((expirationTime - now) / 1000));
-      }
       return parsedSession;
     }
     return null;
@@ -22,55 +17,59 @@ export const SessionProvider = ({ children }) => {
 
   useEffect(() => {
     const initializeSignalR = async () => {
-      await signalRService.startConnection();
-      signalRService.onNewCheckIn((attendanceInfo) => {
-        setSessionData(prevData => {
-          if (!prevData) return null;
-          const updatedData = {
-            ...prevData,
-            attendees: [...(prevData.attendees || []), attendanceInfo]
-          };
-          localStorage.setItem('sessionData', JSON.stringify(updatedData));
-          return updatedData;
+      try {
+        await signalRService.startConnection();
+        console.log('SignalR connection initialized');
+        signalRService.onNewCheckIn((attendanceInfo) => {
+          setSessionData(prevData => {
+            if (!prevData) return null;
+            const updatedData = {
+              ...prevData,
+              attendees: [...(prevData.attendees || []), attendanceInfo]
+            };
+            localStorage.setItem('sessionData', JSON.stringify(updatedData));
+            return updatedData;
+          });
         });
-      });
+      } catch (error) {
+        console.error('Error initializing SignalR:', error);
+      }
     };
 
     initializeSignalR();
 
-    let timer;
-    if (sessionData && sessionData.timeRemaining > 0) {
-      timer = setInterval(() => {
-        setSessionData(prevData => {
-          if (prevData.timeRemaining <= 1) {
-            clearInterval(timer);
-            localStorage.removeItem('sessionData');
-            signalRService.leaveSession(prevData.sessionCode);
-            return null;
-          }
-          const updatedData = {
+    const timer = setInterval(() => {
+      if (sessionData) {
+        const now = new Date();
+        const expirationTime = new Date(sessionData.expirationTime);
+        const timeRemaining = Math.max(0, Math.floor((expirationTime - now) / 1000));
+
+        if (timeRemaining <= 0) {
+          clearInterval(timer);
+          localStorage.removeItem('sessionData');
+          setSessionData(null);
+          signalRService.leaveSession(sessionData.sessionCode).catch(console.error);
+        } else {
+          setSessionData(prevData => ({
             ...prevData,
-            timeRemaining: prevData.timeRemaining - 1
-          };
-          localStorage.setItem('sessionData', JSON.stringify(updatedData));
-          return updatedData;
-        });
-      }, 1000);
-    }
+            timeRemaining
+          }));
+        }
+      }
+    }, 1000);
 
     return () => {
       clearInterval(timer);
       if (sessionData) {
-        signalRService.leaveSession(sessionData.sessionCode);
+        signalRService.leaveSession(sessionData.sessionCode).catch(console.error);
       }
-      signalRService.stopConnection();
+      signalRService.stopConnection().catch(console.error);
     };
   }, [sessionData]);
 
   const startSession = async (data) => {
     const sessionWithTime = {
       ...data,
-      timeRemaining: data.timeRemaining || data.expirationMinutes * 60,
       attendees: []
     };
     setSessionData(sessionWithTime);
@@ -86,17 +85,8 @@ export const SessionProvider = ({ children }) => {
     localStorage.removeItem('sessionData');
   };
 
-  const updateRemainingTime = (time) => {
-    setSessionData(prevData => {
-      if (!prevData) return null;
-      const updatedData = { ...prevData, timeRemaining: time };
-      localStorage.setItem('sessionData', JSON.stringify(updatedData));
-      return updatedData;
-    });
-  };
-
   return (
-    <SessionContext.Provider value={{ sessionData, startSession, endSession, updateRemainingTime }}>
+    <SessionContext.Provider value={{ sessionData, startSession, endSession, setSessionData }}>
       {children}
     </SessionContext.Provider>
   );

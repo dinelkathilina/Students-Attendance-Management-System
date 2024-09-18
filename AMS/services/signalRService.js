@@ -1,66 +1,92 @@
-import * as signalR from "@microsoft/signalr";
+import * as signalR from '@microsoft/signalr';
+
+const API_URL = 'https://ams-bmanedabbnb8gxdd.southeastasia-01.azurewebsites.net';
 
 class SignalRService {
   constructor() {
-    this.connection = new signalR.HubConnectionBuilder()
-      .withUrl("https://ams-bmanedabbnb8gxdd.southeastasia-01.azurewebsites.net/attendanceHub")
-      .withAutomaticReconnect()
-      .configureLogging(signalR.LogLevel.Information)
-      .build();
-
-    this.connection.onreconnecting(() => {
-      console.log("SignalR reconnecting...");
-    });
-
-    this.connection.onreconnected(() => {
-      console.log("SignalR reconnected.");
-    });
-
-    this.connection.onclose((error) => {
-      console.log("SignalR connection closed.", error);
-    });
+    this.connection = null;
+    this.connectionPromise = null;
   }
 
   async startConnection() {
-    if (this.connection.state === signalR.HubConnectionState.Disconnected) {
-      try {
-        await this.connection.start();
-        console.log("SignalR Connected.");
-      } catch (err) {
-        console.error("Error starting SignalR connection:", err);
-        setTimeout(() => this.startConnection(), 5000);
-      }
-    } else {
-      console.log("Connection is already in", this.connection.state, "state");
+    if (!this.connectionPromise) {
+      this.connectionPromise = new Promise((resolve, reject) => {
+        this.connection = new signalR.HubConnectionBuilder()
+          .withUrl(`${API_URL}/attendanceHub`, {
+            accessTokenFactory: () => localStorage.getItem('token')
+          })
+          .withAutomaticReconnect({
+            nextRetryDelayInMilliseconds: retryContext => {
+              if (retryContext.elapsedMilliseconds < 60000) {
+                // If we've been reconnecting for less than 60 seconds so far,
+                // wait between 0 and 10 seconds before the next reconnect attempt.
+                return Math.random() * 10000;
+              } else {
+                // If we've been reconnecting for more than 60 seconds so far, stop reconnecting.
+                return null;
+              }
+            }
+          })
+          .build();
+
+        this.connection.onclose(error => {
+          console.error('SignalR Connection closed:', error);
+          this.connectionPromise = null;
+        });
+
+        this.connection.start()
+          .then(() => {
+            console.log('SignalR Connected');
+            resolve();
+          })
+          .catch(err => {
+            console.error('Error starting SignalR connection:', err);
+            this.connectionPromise = null;
+            reject(err);
+          });
+      });
     }
+
+    return this.connectionPromise;
   }
 
   async stopConnection() {
-    if (this.connection.state !== signalR.HubConnectionState.Disconnected) {
+    if (this.connection) {
       try {
         await this.connection.stop();
-        console.log("SignalR Disconnected.");
+        console.log('SignalR Disconnected');
       } catch (err) {
-        console.error("Error stopping SignalR connection:", err);
+        console.error('Error stopping SignalR connection:', err);
+      } finally {
+        this.connection = null;
+        this.connectionPromise = null;
       }
     }
   }
 
   async joinSession(sessionCode) {
+    await this.startConnection();
     if (this.connection.state === signalR.HubConnectionState.Connected) {
-      try {
-        await this.connection.invoke("JoinSession", sessionCode);
-        console.log("Joined session:", sessionCode);
-      } catch (err) {
-        console.error("Error joining session:", err);
-      }
-    } else {
-      console.error("Cannot join session. Connection is not in Connected state.");
+      await this.connection.invoke('JoinSession', sessionCode);
+    }
+  }
+
+  async leaveSession(sessionCode) {
+    if (this.connection && this.connection.state === signalR.HubConnectionState.Connected) {
+      await this.connection.invoke('LeaveSession', sessionCode);
     }
   }
 
   onNewCheckIn(callback) {
-    this.connection.on("NewCheckIn", callback);
+    if (this.connection) {
+      this.connection.on('NewCheckIn', callback);
+    }
+  }
+
+  offNewCheckIn(callback) {
+    if (this.connection) {
+      this.connection.off('NewCheckIn', callback);
+    }
   }
 }
 

@@ -73,17 +73,20 @@ export const Createsession = () => {
         creationTime: creationTime.toISOString(),
         sessionCode: generatedSessionCode,
         expirationTime: expirationTime.toISOString(),
-        timeRemaining: formData.expirationMinutes * 60 // Add this line
       };
   
+      console.log("Sending session data:", newSessionData);
+  
       const response = await authservice.createSession(newSessionData);
+      console.log("Server response:", response);
+  
       startSession({
         ...newSessionData,
         sessionCode: response.sessionCode,
       });
     } catch (error) {
       console.error("Error creating session:", error);
-      alert("Failed to create session. Please try again.");
+      alert("Failed to create session. Please check the console for more details.");
     }
   };
 

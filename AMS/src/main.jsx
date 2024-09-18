@@ -12,6 +12,7 @@ import { Signup } from "./routes/Signup";
 import ManageCourses from "./routes/ManageCourses";
 import { Report } from "./routes/Report";
 import { CourseSchedules } from "./routes/CourseSchedules";
+import RealtimeCheckins from "./routes/RealtimeCheckins";
 import "./index.css";
 const router = createBrowserRouter([
   {
@@ -46,6 +47,10 @@ const router = createBrowserRouter([
           {
             path: "course_schedules",
             element: <CourseSchedules />,
+          },
+          {
+            path: "realtime-checkins",
+            element: <RealtimeCheckins />,
           },
         ],
       },
