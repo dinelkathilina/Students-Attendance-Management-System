@@ -42,6 +42,10 @@ class SignalRService {
   onNewCheckIn(callback) {
     this.connection.on("NewCheckIn", callback);
   }
+
+  offNewCheckIn() {
+    this.connection.off("NewCheckIn");
+  }
 }
 
 export default new SignalRService();

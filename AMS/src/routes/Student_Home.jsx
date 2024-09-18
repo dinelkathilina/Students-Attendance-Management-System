@@ -11,7 +11,7 @@ export const Student_Home = () => {
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [showScanner, setShowScanner] = useState(false);
-  const [sessionDetails, setSessionDetails] = useState(null);
+  const [checkInInfo, setCheckInInfo] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -54,7 +54,7 @@ export const Student_Home = () => {
       const response = await authservice.checkIn(qrCode);
       console.log("Check-in response:", response);
       toast.success(response.message);
-      setSessionDetails(response.sessionDetails);
+      setCheckInInfo(response.sessionDetails);
 
       // Join the SignalR group for this session
       await signalRService.joinSession(qrCode);
@@ -305,7 +305,19 @@ export const Student_Home = () => {
           </div>
         </aside>
 
-        <main className="p-4 md:ml-64 h-auto pt-20"></main>
+        <main className="p-4 md:ml-64 h-auto pt-20">
+        <h2 className="text-3xl font-semibold mb-4">Welcome, {userName}</h2>
+        
+
+        {!showScanner && !checkInInfo && (
+          <button
+            onClick={() => setShowScanner(true)}
+            className="bg-blue-500 hover:bg-blue-600 px-6 py-3 rounded-lg text-lg font-semibold"
+          >
+            Scan QR Code to Check In
+          </button>
+        )}
+
         {showScanner && (
           <QRScanner
             onClose={() => setShowScanner(false)}
@@ -313,19 +325,16 @@ export const Student_Home = () => {
           />
         )}
 
-        {sessionDetails && (
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h3 className="text-xl font-bold mb-2">Current Session</h3>
-            <p>Course: {sessionDetails.CourseName}</p>
-            <p>
-              Start Time:{" "}
-              {new Date(sessionDetails.StartTime).toLocaleTimeString()}
-            </p>
-            <p>
-              End Time: {new Date(sessionDetails.EndTime).toLocaleTimeString()}
-            </p>
+        {checkInInfo && (
+          <div className="mt-8 bg-gray-800 p-6 rounded-lg">
+            <h3 className="text-2xl font-semibold mb-4">Check-in Successful</h3>
+            <p><strong>Course:</strong> {checkInInfo.courseName}</p>
+            <p><strong>Start Time:</strong> {new Date(checkInInfo.startTime).toLocaleTimeString()}</p>
+            <p><strong>End Time:</strong> {new Date(checkInInfo.endTime).toLocaleTimeString()}</p>
           </div>
         )}
+        </main>
+        
         <ToastContainer
           position="top-right"
           autoClose={5000}
