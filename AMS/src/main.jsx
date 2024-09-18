@@ -48,10 +48,7 @@ const router = createBrowserRouter([
             path: "course_schedules",
             element: <CourseSchedules />,
           },
-          {
-            path: "realtime-checkins",
-            element: <RealtimeCheckins />,
-          },
+          
         ],
       },
       {

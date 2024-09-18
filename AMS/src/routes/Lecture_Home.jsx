@@ -4,7 +4,7 @@ import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { initFlowbite } from "flowbite";
 import CourseScheduleDisplay from "../Components/CourseScheduleDisplay";
 import authservice from "../../services/authservice";
-import signalRService from "../../services/signalRService";
+//import signalRService from "../../services/signalRService";
 export const Lecture_Home = () => {
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
