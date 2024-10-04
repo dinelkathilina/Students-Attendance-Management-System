@@ -1,102 +1,169 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { initFlowbite } from "flowbite";
-import { useEffect } from "react";
+import authservice from "../../services/authservice";
 
 const ManageCourses = () => {
-  const [courses, setCourses] = useState([
-    {
-      id: 1,
-      courseName: "Introduction to React",
-      courseId: "CSE101",
-      startTime: "09:00",
-      endTime: "10:30",
-      day: "Monday",
-    },
-    {
-      id: 2,
-      courseName: "Advanced JavaScript",
-      courseId: "CSE202",
-      startTime: "11:00",
-      endTime: "12:30",
-      day: "Wednesday",
-    },
-  ]);
+  const [courses, setCourses] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState(null);
   const [editingCourseId, setEditingCourseId] = useState(null);
   const [formData, setFormData] = useState({
     courseName: "",
-    courseId: "",
-    startTime: "",
-    endTime: "",
-    day: "",
+    semester: "",
+    courseTimes: [{ day: 0, startTime: "", endTime: "" }],
   });
   const [deletingCourseId, setDeletingCourseId] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     initFlowbite();
+    fetchCourses();
   }, []);
 
-  const handleInputChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const fetchCourses = async () => {
+    setIsLoading(true);
+    try {
+      const fetchedCourses = await authservice.getLecturerCourses();
+      setCourses(fetchedCourses);
+    } catch (error) {
+      setError("Failed to fetch courses. Please try again later.");
+      console.error("Error fetching courses:", error);
+    }
+    setIsLoading(false);
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (editingCourse) {
-      setCourses(
-        courses.map((course) =>
-          course.id === editingCourse.id
-            ? { ...formData, id: course.id }
-            : course
-        )
-      );
+  const handleInputChange = (e, index = null) => {
+    if (index !== null) {
+      const updatedTimes = [...formData.courseTimes];
+      if (e.target.name === "day") {
+        updatedTimes[index] = {
+          ...updatedTimes[index],
+          [e.target.name]: parseInt(e.target.value, 10),
+        };
+      } else {
+        updatedTimes[index] = {
+          ...updatedTimes[index],
+          [e.target.name]: e.target.value,
+        };
+      }
+      setFormData({ ...formData, courseTimes: updatedTimes });
     } else {
-      setCourses([...courses, { ...formData, id: Date.now() }]);
+      if (e.target.name === "semester") {
+        setFormData({
+          ...formData,
+          [e.target.name]: parseInt(e.target.value, 10),
+        });
+      } else {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+      }
     }
-    setIsModalOpen(false);
-    setEditingCourse(null);
+  };
+
+  const addTimeSlot = () => {
     setFormData({
-      courseName: "",
-      courseId: "",
-      startTime: "",
-      endTime: "",
-      day: "",
+      ...formData,
+      courseTimes: [
+        ...formData.courseTimes,
+        { day: 0, startTime: "", endTime: "" },
+      ],
     });
   };
 
-  const handleEdit = (courseId) => {
-    const courseToEdit = courses.find((course) => course.id === courseId);
-    setEditingCourseId(courseId);
-    setEditingCourse(courseToEdit);
+  const removeTimeSlot = (index) => {
+    const updatedTimes = formData.courseTimes.filter((_, i) => i !== index);
+    setFormData({ ...formData, courseTimes: updatedTimes });
   };
 
-  const openEditModal = () => {
-    const courseToEdit = courses.find(
-      (course) => course.id === editingCourseId
-    );
-    setEditingCourse(courseToEdit);
-    setFormData(courseToEdit);
-    setIsModalOpen(true);
-    setEditingCourseId(null);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const courseData = {
+        ...formData,
+        semester: parseInt(formData.semester, 10),
+      };
+      if (editingCourse) {
+        await authservice.updateCourse(editingCourse.courseID, courseData);
+      } else {
+        await authservice.createCourse(courseData);
+      }
+      setIsModalOpen(false);
+      setEditingCourse(null);
+      resetFormData();
+      await fetchCourses();
+    } catch (error) {
+      setError("Failed to save course. Please try again.");
+      console.error("Error saving course:", error);
+    }
   };
 
-  const cancelEdit = () => {
-    setEditingCourseId(null);
+  const handleEdit = (course) => {
+    setEditingCourseId(course.courseID);
   };
 
   const handleDelete = (courseId) => {
     setDeletingCourseId(courseId);
   };
 
-  const confirmDelete = () => {
-    setCourses(courses.filter((course) => course.id !== deletingCourseId));
-    setDeletingCourseId(null);
+  const openEditModal = () => {
+    const courseToEdit = courses.find(
+      (course) => course.courseID === editingCourseId
+    );
+    if (courseToEdit) {
+      setEditingCourse(courseToEdit);
+      setFormData({
+        courseName: courseToEdit.courseName,
+        semester: courseToEdit.semester.toString(),
+        courseTimes: courseToEdit.courseTimes.map((ct) => ({
+          day: ct.day,
+          startTime: ct.startTime,
+          endTime: ct.endTime,
+        })),
+      });
+      setIsModalOpen(true);
+      setEditingCourseId(null); // Clear the editing course ID
+    }
   };
 
-  const cancelDelete = () => {
-    setDeletingCourseId(null);
+  const confirmDelete = async () => {
+    try {
+      await authservice.deleteCourse(deletingCourseId);
+      await fetchCourses();
+      setDeletingCourseId(null);
+    } catch (error) {
+      setError("Failed to delete course. Please try again.");
+      console.error("Error deleting course:", error);
+    }
   };
+
+  const resetFormData = () => {
+    setFormData({
+      courseName: "",
+      semester: "",
+      courseTimes: [{ day: 0, startTime: "", endTime: "" }],
+    });
+  };
+
+  const getDayName = (day) => {
+    const days = [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+    ];
+    return days[day];
+  };
+
+  if (isLoading) {
+    return <div className="text-center text-white">Loading courses...</div>;
+  }
+
+  if (error) {
+    return <div className="text-center text-red-500">{error}</div>;
+  }
 
   return (
     <div className="flex flex-col h-full bg-gray-900 overflow-y-auto">
@@ -104,7 +171,11 @@ const ManageCourses = () => {
         <div className="container mx-2 p-6">
           <h1 className="text-3xl text-white font-bold mb-6">Manage Courses</h1>
           <button
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => {
+              setIsModalOpen(true);
+              setEditingCourse(null);
+              resetFormData();
+            }}
             className="block text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800 mb-4"
             type="button"
           >
@@ -115,28 +186,30 @@ const ManageCourses = () => {
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {courses.map((course) => (
               <div
-                key={course.id}
+                key={course.courseID}
                 className="bg-gray-800 p-6 rounded-lg shadow-md"
               >
                 <h3 className="text-xl text-white font-semibold mb-2">
                   {course.courseName}
                 </h3>
-                <p className="text-gray-200 mb-1">ID: {course.courseId}</p>
                 <p className="text-gray-200 mb-1">
-                  Time: {course.startTime} - {course.endTime}
+                  Semester: {course.semester}
                 </p>
-                <p className="text-gray-200 mb-3">Day: {course.day}</p>
-                <div className="flex justify-end space-x-2">
+                {course.courseTimes.map((ct, index) => (
+                  <p key={index} className="text-gray-200 mb-1">
+                    {getDayName(ct.day)}: {ct.startTime} - {ct.endTime}
+                  </p>
+                ))}
+                <div className="flex justify-end space-x-2 mt-4">
                   <button
-                    onClick={() => handleEdit(course.id)}
-                    className="focus:outline-none text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800"
+                    onClick={() => handleEdit(course)}
+                    className="text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-700"
                   >
                     Edit
                   </button>
                   <button
-                    onClick={() => handleDelete(course.id)}
-                    className="focus:outline-none text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-900"
-                    type="button"
+                    onClick={() => handleDelete(course.courseID)}
+                    className="text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-red-500 dark:hover:bg-red-600 dark:focus:ring-red-700"
                   >
                     Delete
                   </button>
@@ -145,169 +218,150 @@ const ManageCourses = () => {
             ))}
           </div>
 
-          {/* CRUD Modal */}
-          {/* CRUD Modal */}
-          {isModalOpen && (
+          {/* Course Form Modal */}
+          {(isModalOpen || editingCourse) && (
             <div
-              id="crud-modal"
-              tabIndex="-1"
-              aria-hidden="true"
-              className="fixed top-0 right-0 left-0 z-50 flex justify-center items-center w-full h-full bg-black bg-opacity-50"
+              className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full"
+              id="my-modal"
+              onClick={() => {
+                setIsModalOpen(false);
+                setEditingCourse(null);
+                resetFormData();
+              }}
             >
-              <div className="relative p-4 w-full max-w-md max-h-full">
-                <div className="relative bg-white rounded-lg shadow dark:bg-gray-700">
-                  {/* Modal header */}
-                  <div className="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      {editingCourse ? "Edit Course" : "Create New Course"}
-                    </h3>
+              <div
+                className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white"
+                onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside the modal
+              >
+                <div className="mt-3">
+                  <h3 className="text-lg leading-6 font-medium mb-2">
+                    {editingCourse ? "Edit Course" : "Add New Course"}
+                  </h3>
+                  <form onSubmit={handleSubmit} className="mt-2">
+                    <div className="mb-4">
+                      <label
+                        className="block text-gray-700 text-sm font-bold mb-2"
+                        htmlFor="courseName"
+                      >
+                        Course Name
+                      </label>
+                      <input
+                        type="text"
+                        name="courseName"
+                        value={formData.courseName}
+                        onChange={handleInputChange}
+                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                        required
+                      />
+                    </div>
+                    <div className="mb-4">
+                      <label
+                        className="block text-gray-700 text-sm font-bold mb-2"
+                        htmlFor="semester"
+                      >
+                        Semester
+                      </label>
+                      <input
+                        type="number"
+                        name="semester"
+                        value={formData.semester}
+                        onChange={handleInputChange}
+                        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                        required
+                      />
+                    </div>
+                    {formData.courseTimes.map((timeSlot, index) => (
+                      <div key={index} className="mb-4 border-t pt-4">
+                        <div className="mb-2">
+                          <label
+                            className="block text-gray-700 text-sm font-bold mb-2"
+                            htmlFor={`day-${index}`}
+                          >
+                            Day
+                          </label>
+                          <select
+                            name="day"
+                            value={timeSlot.day}
+                            onChange={(e) => handleInputChange(e, index)}
+                            className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                            required
+                          >
+                            {[0, 1, 2, 3, 4, 5, 6].map((day) => (
+                              <option key={day} value={day}>
+                                {getDayName(day)}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="mb-2">
+                          <label
+                            className="block text-gray-700 text-sm font-bold mb-2"
+                            htmlFor={`startTime-${index}`}
+                          >
+                            Start Time
+                          </label>
+                          <input
+                            type="time"
+                            name="startTime"
+                            value={timeSlot.startTime}
+                            onChange={(e) => handleInputChange(e, index)}
+                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                            required
+                          />
+                        </div>
+                        <div className="mb-2">
+                          <label
+                            className="block text-gray-700 text-sm font-bold mb-2"
+                            htmlFor={`endTime-${index}`}
+                          >
+                            End Time
+                          </label>
+                          <input
+                            type="time"
+                            name="endTime"
+                            value={timeSlot.endTime}
+                            onChange={(e) => handleInputChange(e, index)}
+                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                            required
+                          />
+                        </div>
+                        {index > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => removeTimeSlot(index)}
+                            className="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-2 rounded text-sm"
+                          >
+                            Remove Time Slot
+                          </button>
+                        )}
+                      </div>
+                    ))}
                     <button
                       type="button"
-                      onClick={() => {
-                        setIsModalOpen(false);
-                        setEditingCourse(null);
-                        setFormData({
-                          courseName: "",
-                          courseId: "",
-                          startTime: "",
-                          endTime: "",
-                          day: "",
-                        });
-                      }}
-                      className="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"
+                      onClick={addTimeSlot}
+                      className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mb-4"
                     >
-                      <svg
-                        className="w-3 h-3"
-                        aria-hidden="true"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 14 14"
-                      >
-                        <path
-                          stroke="currentColor"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"
-                        />
-                      </svg>
-                      <span className="sr-only">Close modal</span>
+                      Add Time Slot
                     </button>
-                  </div>
-                  {/* Modal body */}
-                  <form onSubmit={handleSubmit} className="p-4 md:p-5">
-                    <div className="grid gap-4 mb-4 grid-cols-2">
-                      <div className="col-span-2">
-                        <label
-                          htmlFor="courseName"
-                          className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                        >
-                          Course Name
-                        </label>
-                        <input
-                          type="text"
-                          name="courseName"
-                          id="courseName"
-                          value={formData.courseName}
-                          onChange={handleInputChange}
-                          className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
-                          placeholder="Type course name"
-                          required
-                        />
-                      </div>
-                      <div className="col-span-2">
-                        <label
-                          htmlFor="courseId"
-                          className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                        >
-                          Course ID
-                        </label>
-                        <input
-                          type="text"
-                          name="courseId"
-                          id="courseId"
-                          value={formData.courseId}
-                          onChange={handleInputChange}
-                          className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
-                          placeholder="Type Course ID"
-                          required
-                        />
-                      </div>
-                      <div className="col-span-2">
-                        <label
-                          htmlFor="day"
-                          className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                        >
-                          Day
-                        </label>
-                        <select
-                          id="day"
-                          name="day"
-                          value={formData.day}
-                          onChange={handleInputChange}
-                          className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
-                        >
-                          <option value="">Select Day</option>
-                          <option value="Monday">Monday</option>
-                          <option value="Tuesday">Tuesday</option>
-                          <option value="Wednesday">Wednesday</option>
-                          <option value="Thursday">Thursday</option>
-                          <option value="Friday">Friday</option>
-                        </select>
-                      </div>
-                      <div className="col-span-1">
-                        <label
-                          htmlFor="startTime"
-                          className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                        >
-                          Start time
-                        </label>
-                        <input
-                          type="time"
-                          id="startTime"
-                          name="startTime"
-                          value={formData.startTime}
-                          onChange={handleInputChange}
-                          className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
-                          required
-                        />
-                      </div>
-                      <div className="col-span-1">
-                        <label
-                          htmlFor="endTime"
-                          className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                        >
-                          End time
-                        </label>
-                        <input
-                          type="time"
-                          id="endTime"
-                          name="endTime"
-                          value={formData.endTime}
-                          onChange={handleInputChange}
-                          className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
-                          required
-                        />
-                      </div>
+                    <div className="flex justify-between mt-4">
+                      <button
+                        type="submit"
+                        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                      >
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsModalOpen(false);
+                          setEditingCourse(null);
+                          resetFormData();
+                        }}
+                        className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                      >
+                        Cancel
+                      </button>
                     </div>
-                    <button
-                      type="submit"
-                      className="text-white inline-flex items-center bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-                    >
-                      <svg
-                        className="me-1 -ms-1 w-5 h-5"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
-                          clipRule="evenodd"
-                        ></path>
-                      </svg>
-                      {editingCourse ? "Update Course" : "Add new Course"}
-                    </button>
                   </form>
                 </div>
               </div>
@@ -317,68 +371,33 @@ const ManageCourses = () => {
           {/* Delete Confirmation Modal */}
           {deletingCourseId && (
             <div
-              id="popup-modal"
-              tabIndex="-1"
-              className="fixed top-0 right-0 left-0 z-50 flex justify-center items-center w-full h-full bg-black bg-opacity-50"
+              className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center"
+              id="delete-modal"
+              onClick={() => setDeletingCourseId(null)}
             >
-              <div className="relative p-4 w-full max-w-md max-h-full">
-                <div className="relative bg-white rounded-lg shadow dark:bg-gray-700">
+              <div
+                className="relative p-5 border w-96 shadow-lg rounded-md bg-gray-800 text-white"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h3 className="text-lg font-medium leading-6 mb-4">
+                  Confirm Deletion
+                </h3>
+                <p className="text-sm mb-4">
+                  Are you sure you want to delete this course?
+                </p>
+                <div className="flex justify-end">
                   <button
-                    type="button"
-                    onClick={cancelDelete}
-                    className="absolute top-3 end-2.5 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"
+                    onClick={confirmDelete}
+                    className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded mr-2"
                   >
-                    <svg
-                      className="w-3 h-3"
-                      aria-hidden="true"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 14 14"
-                    >
-                      <path
-                        stroke="currentColor"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"
-                      />
-                    </svg>
-                    <span className="sr-only">Close modal</span>
+                    Delete
                   </button>
-                  <div className="p-4 md:p-5 text-center">
-                    <svg
-                      className="mx-auto mb-4 text-gray-400 w-12 h-12 dark:text-gray-200"
-                      aria-hidden="true"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        stroke="currentColor"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M10 11V6m0 8h.01M19 10a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-                      />
-                    </svg>
-                    <h3 className="mb-5 text-lg font-normal text-gray-500 dark:text-gray-400">
-                      Are you sure you want to delete this course?
-                    </h3>
-                    <button
-                      onClick={confirmDelete}
-                      type="button"
-                      className="text-white bg-red-600 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 dark:focus:ring-red-800 font-medium rounded-lg text-sm inline-flex items-center px-5 py-2.5 text-center mr-2"
-                    >
-                      Yes, I'm sure
-                    </button>
-                    <button
-                      onClick={cancelDelete}
-                      type="button"
-                      className="text-gray-500 bg-white hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-gray-200 rounded-lg border border-gray-200 text-sm font-medium px-5 py-2.5 hover:text-gray-900 focus:z-10 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-gray-600"
-                    >
-                      No, cancel
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => setDeletingCourseId(null)}
+                    className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
+                  >
+                    Cancel
+                  </button>
                 </div>
               </div>
             </div>
@@ -387,68 +406,33 @@ const ManageCourses = () => {
           {/* Edit Confirmation Modal */}
           {editingCourseId && (
             <div
+              className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center"
               id="edit-modal"
-              tabIndex="-1"
-              className="fixed top-0 right-0 left-0 z-50 flex justify-center items-center w-full h-full bg-black bg-opacity-50"
+              onClick={() => setEditingCourseId(null)}
             >
-              <div className="relative p-4 w-full max-w-md max-h-full">
-                <div className="relative bg-white rounded-lg shadow dark:bg-gray-700">
+              <div
+                className="relative p-5 border w-96 shadow-lg rounded-md bg-gray-800 text-white"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h3 className="text-lg font-medium leading-6 mb-4">
+                  Confirm Edit
+                </h3>
+                <p className="text-sm mb-4">
+                  Are you sure you want to edit this course?
+                </p>
+                <div className="flex justify-end">
                   <button
-                    type="button"
-                    onClick={cancelEdit}
-                    className="absolute top-3 end-2.5 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"
+                    onClick={openEditModal}
+                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mr-2"
                   >
-                    <svg
-                      className="w-3 h-3"
-                      aria-hidden="true"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 14 14"
-                    >
-                      <path
-                        stroke="currentColor"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"
-                      />
-                    </svg>
-                    <span className="sr-only">Close modal</span>
+                    Edit
                   </button>
-                  <div className="p-4 md:p-5 text-center">
-                    <svg
-                      className="mx-auto mb-4 text-gray-400 w-12 h-12 dark:text-gray-200"
-                      aria-hidden="true"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        stroke="currentColor"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M10 11V6m0 8h.01M19 10a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-                      />
-                    </svg>
-                    <h3 className="mb-5 text-lg font-normal text-gray-500 dark:text-gray-400">
-                      Are you sure you want to edit this course?
-                    </h3>
-                    <button
-                      onClick={openEditModal}
-                      type="button"
-                      className="text-white bg-blue-600 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:focus:ring-blue-800 font-medium rounded-lg text-sm inline-flex items-center px-5 py-2.5 text-center mr-2"
-                    >
-                      Yes, I'm sure
-                    </button>
-                    <button
-                      onClick={cancelEdit}
-                      type="button"
-                      className="text-gray-500 bg-white hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-gray-200 rounded-lg border border-gray-200 text-sm font-medium px-5 py-2.5 hover:text-gray-900 focus:z-10 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-gray-600"
-                    >
-                      No, cancel
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => setEditingCourseId(null)}
+                    className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
+                  >
+                    Cancel
+                  </button>
                 </div>
               </div>
             </div>
