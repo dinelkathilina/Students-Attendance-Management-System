@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { initFlowbite } from "flowbite";
-import CourseScheduleDisplay from '../Components/CourseScheduleDisplay'
+import CourseScheduleDisplay from "../Components/CourseScheduleDisplay";
 import authservice from "../../services/authservice";
 import signalRService from "../../services/signalRService";
+import { useSession } from "../../src/Context/SessionContext";
+
 export const Lecture_Home = () => {
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
@@ -16,6 +18,7 @@ export const Lecture_Home = () => {
   const [currentSession, setCurrentSession] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
+  const {  refreshSession } = useSession();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -31,12 +34,16 @@ export const Lecture_Home = () => {
 
         const coursesData = await authservice.getLecturerCoursesTime();
         setCourses(coursesData);
+
+        // Refresh the session data
+        await refreshSession();
+
         setIsLoading(false);
 
         // Initialize SignalR connection
         await signalRService.startConnection();
         signalRService.onNewCheckIn((attendanceInfo) => {
-          setCheckedInStudents(prev => [...prev, attendanceInfo]);
+          setCheckedInStudents((prev) => [...prev, attendanceInfo]);
         });
       } catch (error) {
         console.error("Error fetching data or initializing SignalR:", error);
@@ -66,7 +73,6 @@ export const Lecture_Home = () => {
       setError("Failed to create session. Please try again.");
     }
   };
-
 
   const handleLogout = () => {
     navigate("/logout");
@@ -356,20 +362,22 @@ export const Lecture_Home = () => {
           )}
         </main>
         {currentSession && (
-    <div className="bg-white p-6 rounded-lg shadow-md mt-4">
-      <h3 className="text-xl font-bold mb-2">Current Session</h3>
-      <p>Session Code: {currentSession.sessionCode}</p>
-      <h4 className="text-lg font-semibold mt-4 mb-2">Checked-in Students</h4>
-      <ul>
-        {checkedInStudents.map((student, index) => (
-          <li key={index}>
-            {student.studentName} - {new Date(student.checkInTime).toLocaleTimeString()}
-          </li>
-        ))}
-      </ul>
-    </div>
-  )}
-
+          <div className="bg-white p-6 rounded-lg shadow-md mt-4">
+            <h3 className="text-xl font-bold mb-2">Current Session</h3>
+            <p>Session Code: {currentSession.sessionCode}</p>
+            <h4 className="text-lg font-semibold mt-4 mb-2">
+              Checked-in Students
+            </h4>
+            <ul>
+              {checkedInStudents.map((student, index) => (
+                <li key={index}>
+                  {student.studentName} -{" "}
+                  {new Date(student.checkInTime).toLocaleTimeString()}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
     </>
   );

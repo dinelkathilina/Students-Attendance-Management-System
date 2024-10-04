@@ -199,8 +199,93 @@ const authservice = {
     }
   },
 
- 
 
+  //manage courses
+  getLecturerCourses: async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return null;
+
+    try {
+      const response = await axios.get(`${API_URL}/api/manage-courses/courses`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching lecturer courses:', error);
+      throw error;
+    }
+  },
+
+  createCourse: async (courseData) => {
+    const token = localStorage.getItem('token');
+    console.log('Course data being sent:', JSON.stringify(courseData, null, 2));
+    if (!token) return null;
+
+    try {
+      const response = await axios.post(`${API_URL}/api/manage-courses/courses`, courseData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error creating course:', error);
+      if (error.response) {
+        console.error('Error response:', error.response.data);
+        console.error('Status:', error.response.status);
+        console.error('Headers:', error.response.headers);
+      }
+    }
+  },
+
+  updateCourse: async (courseId, courseData) => {
+    const token = localStorage.getItem('token');
+    if (!token) return null;
+
+    try {
+      const response = await axios.put(`${API_URL}/api/manage-courses/courses/${courseId}`, courseData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error updating course:', error);
+      throw error;
+    }
+  },
+
+  deleteCourse: async (courseId) => {
+    const token = localStorage.getItem('token');
+    if (!token) return null;
+  
+    try {
+      const response = await axios.delete(`${API_URL}/api/manage-courses/courses/${courseId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting course:', error);
+      if (error.response) {
+        console.error('Error response:', error.response.data);
+        console.error('Status:', error.response.status);
+        console.error('Headers:', error.response.headers);
+      }
+      throw error;
+    }
+  },
+
+ 
+  getActiveSession: async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return null;
+
+    try {
+      const response = await axios.get(`${API_URL}/api/session/active`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching active session:', error);
+      return null;
+    }
+  },
   // Add more auth-related functions as needed
 };
 
