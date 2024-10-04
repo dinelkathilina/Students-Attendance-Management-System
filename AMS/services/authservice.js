@@ -272,7 +272,20 @@ const authservice = {
   },
 
  
+  getActiveSession: async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return null;
 
+    try {
+      const response = await axios.get(`${API_URL}/api/session/active`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching active session:', error);
+      return null;
+    }
+  },
   // Add more auth-related functions as needed
 };
 

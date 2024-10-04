@@ -6,7 +6,7 @@ import authservice from "../../services/authservice";
 
 export const Createsession = () => {
 
-  const navigate = useNavigate();
+
   const { sessionData, startSession, endSession } = useSession();
   const isSessionActive = sessionData && sessionData.timeRemaining > 0;
   const [formData, setFormData] = useState({
