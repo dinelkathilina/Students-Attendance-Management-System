@@ -2,8 +2,8 @@ import React, { useEffect, useState } from "react";
 import signalRService from "../../services/signalRService";
 import { useSession } from "../Context/SessionContext";
 import authservice from "../../services/authservice";
-import { formatInTimeZone } from "date-fns-tz";
-import { utcToZonedTime } from "date-fns-tz";
+import { parseISO, addMinutes, format } from "date-fns";
+
 
 const LiveChecking = () => {
   const [checkedInStudents, setCheckedInStudents] = useState([]);
@@ -89,27 +89,31 @@ const LiveChecking = () => {
             {checkedInStudents.length === 0 ? (
               <p className="text-white">No students have checked in yet.</p>
             ) : (
-              <ul className="space-y-2">
-                {checkedInStudents.map((student, index) => (
-                  <li
-                    key={index}
-                    className="bg-gray-700 p-3 rounded-md text-white"
-                  >
-                    <p className="font-semibold">{student.studentName}</p>
-                    <p className="text-sm text-gray-300">
-                      Checked in at:{" "}
-                      {formatInTimeZone(
-                        utcToZonedTime(
-                          new Date(student.checkInTime),
-                          Intl.DateTimeFormat().resolvedOptions().timeZone
-                        ),
-                        Intl.DateTimeFormat().resolvedOptions().timeZone,
-                        "HH:mm:ss"
-                      )}
-                    </p>
-                  </li>
-                ))}
-              </ul>
+<ul className="space-y-2">
+        {checkedInStudents.map((student, index) => {
+          console.log("Received check-in time:", student.checkInTime);
+          console.log(
+            "User's timezone:",
+            Intl.DateTimeFormat().resolvedOptions().timeZone
+          );
+
+          const checkInDate = parseISO(student.checkInTime);
+          const localCheckInDate = addMinutes(checkInDate, 330); // Add 5 hours and 30 minutes
+
+          return (
+            <li
+              key={index}
+              className="bg-gray-700 p-3 rounded-md text-white"
+            >
+              <p className="font-semibold">{student.studentName}</p>
+              <p className="text-sm text-gray-300">
+                Checked in at:{" "}
+                {format(localCheckInDate, "HH:mm:ss")}
+              </p>
+            </li>
+          );
+        })}
+      </ul>
             )}
           </div>
         </div>
