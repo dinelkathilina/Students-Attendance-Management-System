@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { initFlowbite } from "flowbite";
 import authservice from "../../services/authservice";
+import { toast } from 'react-toastify';
 
 const ManageCourses = () => {
   const [courses, setCourses] = useState([]);
@@ -77,23 +78,41 @@ const ManageCourses = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
     try {
       const courseData = {
         ...formData,
         semester: parseInt(formData.semester, 10),
       };
+      let response;
       if (editingCourse) {
-        await authservice.updateCourse(editingCourse.courseID, courseData);
+        response = await authservice.updateCourse(editingCourse.courseID, courseData);
       } else {
-        await authservice.createCourse(courseData);
+        response = await authservice.createCourse(courseData);
       }
-      setIsModalOpen(false);
-      setEditingCourse(null);
-      resetFormData();
-      await fetchCourses();
+  
+      // Check if the response indicates success
+      if (response && response.courseID) {
+        toast.success(editingCourse ? "Course updated successfully" : "Course created successfully");
+        setIsModalOpen(false);
+        setEditingCourse(null);
+        resetFormData();
+        await fetchCourses(); // Refresh the course list
+      } else {
+        // If response doesn't have courseID, it might be an error
+        toast.error("Failed to save course. Please try again.");
+      }
     } catch (error) {
-      setError("Failed to save course. Please try again.");
+      if (error.response && error.response.data) {
+        toast.error(error.response.data);
+      } else if (error.message) {
+        toast.error(error.message);
+      } else {
+        toast.error("Failed to save course. Please try again.");
+      }
       console.error("Error saving course:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 

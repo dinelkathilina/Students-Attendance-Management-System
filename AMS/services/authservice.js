@@ -218,39 +218,37 @@ const authservice = {
 
   createCourse: async (courseData) => {
     const token = localStorage.getItem('token');
-    console.log('Course data being sent:', JSON.stringify(courseData, null, 2));
-    if (!token) return null;
+    if (!token) throw new Error("No authentication token found");
 
     try {
       const response = await axios.post(`${API_URL}/api/manage-courses/courses`, courseData, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      return response.data;
+      return response.data; // Return the response data
     } catch (error) {
-      console.error('Error creating course:', error);
-      if (error.response) {
-        console.error('Error response:', error.response.data);
-        console.error('Status:', error.response.status);
-        console.error('Headers:', error.response.headers);
+      if (error.response && error.response.data) {
+        throw new Error(error.response.data);
       }
+      throw error;
     }
   },
 
   updateCourse: async (courseId, courseData) => {
     const token = localStorage.getItem('token');
-    if (!token) return null;
+    if (!token) throw new Error("No authentication token found");
 
     try {
       const response = await axios.put(`${API_URL}/api/manage-courses/courses/${courseId}`, courseData, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      return response.data;
+      return response.data; // Return the response data
     } catch (error) {
-      console.error('Error updating course:', error);
+      if (error.response && error.response.data) {
+        throw new Error(error.response.data);
+      }
       throw error;
     }
   },
-
   deleteCourse: async (courseId) => {
     const token = localStorage.getItem('token');
     if (!token) return null;
