@@ -284,6 +284,22 @@ const authservice = {
       return null;
     }
   },
+
+  getAttendanceReport: async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return null;
+  
+    try {
+      const response = await axios.get(`${API_URL}/api/attendance-report`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching attendance report:', error);
+      throw error;
+    }
+  },
+
   // Add more auth-related functions as needed
 };
 
