@@ -270,20 +270,6 @@ const authservice = {
   },
 
  
-  getActiveSession: async () => {
-    const token = localStorage.getItem('token');
-    if (!token) return null;
-
-    try {
-      const response = await axios.get(`${API_URL}/api/session/active`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching active session:', error);
-      return null;
-    }
-  },
 
   getAttendanceReport: async () => {
     const token = localStorage.getItem('token');
@@ -300,7 +286,40 @@ const authservice = {
     }
   },
 
-  // Add more auth-related functions as needed
+
+
+getActiveSession: async () => {
+  const token = localStorage.getItem('token');
+  if (!token) return null;
+
+  try {
+    const response = await axios.get(`${API_URL}/api/session/active`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return response.data;
+  } catch (error) {
+    if (error.response && error.response.status === 404) {
+      // No active session found, this is not an error
+      return null;
+    }
+    console.error('Error fetching active session:', error);
+    throw error;
+  }
+},
+
+endSession: async (sessionId) => {
+  const token = localStorage.getItem('token');
+  if (!token) return null;
+
+  try {
+    await axios.post(`${API_URL}/api/session/end/${sessionId}`, {}, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+  } catch (error) {
+    console.error('Error ending session:', error);
+    throw error;
+  }
+},
 };
 
 export default authservice;

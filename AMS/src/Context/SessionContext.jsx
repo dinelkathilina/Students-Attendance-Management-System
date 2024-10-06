@@ -7,16 +7,28 @@ export const useSession = () => useContext(SessionContext);
 
 export const SessionProvider = ({ children }) => {
   const [sessionData, setSessionData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const fetchActiveSession = async () => {
-    const activeSession = await authservice.getActiveSession();
-    if (activeSession) {
-      setSessionData({
-        ...activeSession,
-        timeRemaining: activeSession.remainingTime
-      });
-    } else {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const activeSession = await authservice.getActiveSession();
+      if (activeSession) {
+        setSessionData({
+          ...activeSession,
+          timeRemaining: activeSession.remainingTime
+        });
+      } else {
+        setSessionData(null);
+      }
+    } catch (err) {
+      console.error('Error fetching active session:', err);
+      setError('Failed to fetch active session');
       setSessionData(null);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -31,7 +43,7 @@ export const SessionProvider = ({ children }) => {
     if (sessionData && sessionData.timeRemaining > 0) {
       timer = setInterval(() => {
         setSessionData(prevData => {
-          if (prevData.timeRemaining <= 1) {
+          if (!prevData || prevData.timeRemaining <= 1) {
             clearInterval(timer);
             return null;
           }
@@ -53,8 +65,16 @@ export const SessionProvider = ({ children }) => {
     });
   };
 
-  const endSession = () => {
-    setSessionData(null);
+  const endSession = async () => {
+    if (!sessionData) return;
+    
+    try {
+      await authservice.endSession(sessionData.sessionID);
+      setSessionData(null);
+    } catch (err) {
+      console.error('Error ending session:', err);
+      setError('Failed to end session');
+    }
   };
 
   const refreshSession = () => {
@@ -62,7 +82,14 @@ export const SessionProvider = ({ children }) => {
   };
 
   return (
-    <SessionContext.Provider value={{ sessionData, startSession, endSession, refreshSession }}>
+    <SessionContext.Provider value={{ 
+      sessionData, 
+      startSession, 
+      endSession, 
+      refreshSession,
+      isLoading,
+      error
+    }}>
       {children}
     </SessionContext.Provider>
   );
