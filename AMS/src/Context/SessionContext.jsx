@@ -1,5 +1,11 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import authservice from '../../services/authservice';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
+import authservice from "../../services/authservice";
 
 const SessionContext = createContext();
 
@@ -18,15 +24,14 @@ export const SessionProvider = ({ children }) => {
       if (activeSession) {
         setSessionData({
           ...activeSession,
-          timeRemaining: activeSession.remainingTime
+          timeRemaining: activeSession.remainingTime,
         });
       } else {
         setSessionData(null);
       }
     } catch (err) {
-      console.error('Error fetching active session:', err);
-      setError('Failed to fetch active session');
-      setSessionData(null);
+      console.error("Error fetching active session:", err);
+      setError("Failed to fetch active session");
     } finally {
       setIsLoading(false);
     }
@@ -42,14 +47,14 @@ export const SessionProvider = ({ children }) => {
     let timer;
     if (sessionData && sessionData.timeRemaining > 0) {
       timer = setInterval(() => {
-        setSessionData(prevData => {
+        setSessionData((prevData) => {
           if (!prevData || prevData.timeRemaining <= 1) {
             clearInterval(timer);
             return null;
           }
           return {
             ...prevData,
-            timeRemaining: prevData.timeRemaining - 1
+            timeRemaining: prevData.timeRemaining - 1,
           };
         });
       }, 1000);
@@ -61,21 +66,21 @@ export const SessionProvider = ({ children }) => {
   const startSession = useCallback((data) => {
     setSessionData({
       ...data,
-      timeRemaining: data.timeRemaining || data.expirationMinutes * 60
+      timeRemaining: data.timeRemaining || data.expirationMinutes * 60,
     });
   }, []);
 
   const endSession = useCallback(async () => {
     if (!sessionData) return;
-    
+
     setIsLoading(true);
     setError(null);
     try {
       await authservice.endSession(sessionData.sessionID);
       setSessionData(null);
     } catch (err) {
-      console.error('Error ending session:', err);
-      setError('Failed to end session');
+      console.error("Error ending session:", err);
+      setError("Failed to end session");
     } finally {
       setIsLoading(false);
     }
@@ -91,11 +96,11 @@ export const SessionProvider = ({ children }) => {
     endSession,
     refreshSession,
     isLoading,
-    error
+    error,
   };
 
   return (
-    <SessionContext.Provider value={contextValue}>
+    <SessionContext.Provider value={{ sessionData, startSession, endSession, refreshSession, isLoading, error }}>
       {children}
     </SessionContext.Provider>
   );

@@ -5,9 +5,8 @@ import { useSession } from "../Context/SessionContext";
 import authservice from "../../services/authservice";
 
 export const Createsession = () => {
-  const { sessionData, startSession, endSession, refreshSession } =
-    useSession();
-  const [isLoading, setIsLoading] = useState(true);
+  const { sessionData, startSession, endSession, refreshSession, isLoading, error } = useSession();
+
   const [data, setData] = useState({
     courses: [],
     lectureHalls: [],
@@ -23,41 +22,40 @@ export const Createsession = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const startTime = Date.now();
       try {
-        const [coursesData, lectureHallsData] = await Promise.all([
-          authservice.getLecturerCourses(),
-          authservice.getLectureHalls(),
-        ]);
-        await refreshSession();
-
-        const endTime = Date.now();
-        const loadTime = endTime - startTime;
-        const remainingTime = Math.max(1000 - loadTime, 0);
-
-        // Ensure a minimum loading time of 1 second
-        setTimeout(() => {
-          setData({
-            courses: coursesData,
-            lectureHalls: lectureHallsData,
-          });
-          setIsLoading(false);
-        }, remainingTime);
+        const courses = await authservice.getLecturerCourses();
+        const lectureHalls = await authservice.getLectureHalls();
+        setData({ courses, lectureHalls });
       } catch (error) {
         console.error("Error fetching data:", error);
-        setTimeout(() => setIsLoading(false), 1000);
       }
     };
 
     fetchData();
+    refreshSession();
   }, [refreshSession]);
 
-  const handleInputChange = (e) => {
+  const handleInputChange = async (e) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({
       ...prevData,
       [name]: value,
     }));
+
+    if (name === "course") {
+      try {
+        const courseTime = await authservice.getCourseTime(value);
+        if (courseTime) {
+          setFormData((prevData) => ({
+            ...prevData,
+            startTime: courseTime.startTime,
+            endTime: courseTime.endTime,
+          }));
+        }
+      } catch (error) {
+        console.error("Error fetching course time:", error);
+      }
+    }
   };
 
   const handleEndSession = async () => {
@@ -168,6 +166,11 @@ export const Createsession = () => {
         </div>
       </div>
     );
+  }
+
+
+  if (error) {
+    return <div className=" text-red-600 text-center">Error: {error}</div>;
   }
 
   return (

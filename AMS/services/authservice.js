@@ -293,7 +293,7 @@ const authservice = {
   getActiveSession: async () => {
     const token = localStorage.getItem('token');
     if (!token) return null;
-
+  
     try {
       const response = await axios.get(`${API_URL}/api/session/active`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -301,7 +301,7 @@ const authservice = {
       return response.data;
     } catch (error) {
       if (error.response && error.response.status === 404) {
-        // No active session found, this is not an error
+        console.log('No active session found');
         return null;
       }
       console.error('Error fetching active session:', error);
@@ -320,6 +320,21 @@ const authservice = {
     } catch (error) {
       console.error('Error ending session:', error);
       throw error;
+    }
+  },
+
+  getCourseTime: async (courseId) => {
+    const token = localStorage.getItem('token');
+    if (!token) return null;
+  
+    try {
+      const response = await axios.get(`${API_URL}/api/session/course-times/${courseId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching course time:', error);
+      return null;
     }
   },
 
