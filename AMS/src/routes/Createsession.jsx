@@ -5,10 +5,13 @@ import { useSession } from "../Context/SessionContext";
 import authservice from "../../services/authservice";
 
 export const Createsession = () => {
-
-
-  const { sessionData, startSession, endSession } = useSession();
-  const isSessionActive = sessionData && sessionData.timeRemaining > 0;
+  const { sessionData, startSession, endSession, refreshSession } =
+    useSession();
+  const [isLoading, setIsLoading] = useState(true);
+  const [data, setData] = useState({
+    courses: [],
+    lectureHalls: [],
+  });
   const [formData, setFormData] = useState({
     course: "",
     date: new Date().toISOString().split("T")[0],
@@ -17,29 +20,37 @@ export const Createsession = () => {
     lectureHall: "",
     expirationMinutes: 5,
   });
-  const [courses, setCourses] = useState([]);
-  const [lectureHalls, setLectureHalls] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
+      const startTime = Date.now();
       try {
-        const coursesData = await authservice.getLecturerCourses();
-        setCourses(coursesData);
-        const lectureHallsData = await authservice.getLectureHalls();
-        setLectureHalls(lectureHallsData);
+        const [coursesData, lectureHallsData] = await Promise.all([
+          authservice.getLecturerCourses(),
+          authservice.getLectureHalls(),
+        ]);
+        await refreshSession();
+
+        const endTime = Date.now();
+        const loadTime = endTime - startTime;
+        const remainingTime = Math.max(1000 - loadTime, 0);
+
+        // Ensure a minimum loading time of 1 second
+        setTimeout(() => {
+          setData({
+            courses: coursesData,
+            lectureHalls: lectureHallsData,
+          });
+          setIsLoading(false);
+        }, remainingTime);
       } catch (error) {
         console.error("Error fetching data:", error);
+        setTimeout(() => setIsLoading(false), 1000);
       }
     };
 
     fetchData();
-  }, []);
-
-  useEffect(() => {
-    if (sessionData && sessionData.timeRemaining <= 0) {
-      endSession();
-    }
-  }, [sessionData, endSession]);
+  }, [refreshSession]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -47,6 +58,13 @@ export const Createsession = () => {
       ...prevData,
       [name]: value,
     }));
+  };
+
+  const handleEndSession = async () => {
+    if (window.confirm("Are you sure you want to end the current session?")) {
+      await endSession();
+      await refreshSession();
+    }
   };
 
   const generateSessionCode = () => {
@@ -61,21 +79,23 @@ export const Createsession = () => {
       alert("A session is already active. Please wait for it to expire.");
       return;
     }
-  
+
     try {
       const creationTime = new Date(`${formData.date}T${formData.startTime}`);
-      const expirationTime = new Date(creationTime.getTime() + formData.expirationMinutes * 60000);
+      const expirationTime = new Date(
+        creationTime.getTime() + formData.expirationMinutes * 60000
+      );
       const generatedSessionCode = generateSessionCode();
-  
+
       const newSessionData = {
         courseID: parseInt(formData.course, 10),
         lectureHallID: parseInt(formData.lectureHall, 10),
         creationTime: creationTime.toISOString(),
         sessionCode: generatedSessionCode,
         expirationTime: expirationTime.toISOString(),
-        timeRemaining: formData.expirationMinutes * 60 // Add this line
+        timeRemaining: formData.expirationMinutes * 60,
       };
-  
+
       const response = await authservice.createSession(newSessionData);
       startSession({
         ...newSessionData,
@@ -140,158 +160,33 @@ export const Createsession = () => {
     return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex flex-col h-full bg-gray-900 overflow-y-auto">
+        <div className="flex-grow flex items-center justify-center p-4">
+          <div className="text-white text-center">Loading session data...</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full bg-gray-900 overflow-y-auto">
       <div className="flex-grow flex items-center justify-center  p-4">
         <main className="w-full max-w-2xl bg-gray-800 rounded-lg shadow-md overflow-hidden">
-          <div className="p-6 space-y-6 mb-8">
-            <h2 className="text-2xl font-bold text-white text-center">
-              Create Session
-            </h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label
-                  htmlFor="course"
-                  className="block text-sm font-medium text-gray-300 mb-1"
-                >
-                  Select your Course
-                </label>
-                <select
-                  id="course"
-                  name="course"
-                  value={formData.course}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select a course</option>
-                  {courses.map((course) => (
-                    <option key={course.courseID} value={course.courseID}>
-                      {course.courseName}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label
-                  htmlFor="date"
-                  className="block text-sm font-medium text-gray-300 mb-1"
-                >
-                  Date
-                </label>
-                <input
-                  type="text"
-                  id="date"
-                  name="date"
-                  value={formData.date}
-                  readOnly
-                  className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-not-allowed"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label
-                    htmlFor="startTime"
-                    className="block text-sm font-medium text-gray-300 mb-1"
-                  >
-                    Start time
-                  </label>
-                  <input
-                    type="time"
-                    id="startTime"
-                    name="startTime"
-                    value={formData.startTime}
-                    onChange={handleInputChange}
-                    className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="endTime"
-                    className="block text-sm font-medium text-gray-300 mb-1"
-                  >
-                    End time
-                  </label>
-                  <input
-                    type="time"
-                    id="endTime"
-                    name="endTime"
-                    value={formData.endTime}
-                    onChange={handleInputChange}
-                    className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label
-                  htmlFor="lectureHall"
-                  className="block text-sm font-medium text-gray-300 mb-1"
-                >
-                  Lecture Hall
-                </label>
-                <select
-                  id="lectureHall"
-                  name="lectureHall"
-                  value={formData.lectureHall}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select a lecture hall</option>
-                  {lectureHalls.map((hall) => (
-                    <option key={hall.lectureHallID} value={hall.lectureHallID}>
-                      {hall.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label
-                  htmlFor="expirationMinutes"
-                  className="block text-sm font-medium text-gray-300 mb-1"
-                >
-                  Expiration Time (minutes)
-                </label>
-                <input
-                  type="number"
-                  id="expirationMinutes"
-                  name="expirationMinutes"
-                  value={formData.expirationMinutes}
-                  onChange={handleInputChange}
-                  min="1"
-                  max="60"
-                  className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 rounded-md font-medium text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800"
-                disabled={isSessionActive}
-              >
-                {sessionData ? "Session Active" : "Create Session"}
-              </button>
-            </form>
-          </div>
-
-          {isSessionActive && (
-            <div className="bg-gray-900 p-6 text-center">
-              <h3 className="text-lg font-semibold mb-2 text-white">
-                Session Code:
-              </h3>
-              <p className="mb-4 break-all text-white">{sessionData.sessionCode}</p>
-              <p className="mb-4 text-white">
+          {sessionData ? (
+            <div className="p-6 space-y-6">
+              <h2 className="text-2xl font-bold text-white text-center">
+                Active Session
+              </h2>
+              <p className="text-white">
+                Session Code: {sessionData.sessionCode}
+              </p>
+              <p className="text-white">
                 Time Remaining: {formatTime(sessionData.timeRemaining)}
               </p>
               <div className="flex flex-col items-center">
-              <canvas
+                <canvas
                   ref={(el) => {
                     if (el && sessionData) {
                       QRCode.toCanvas(
@@ -318,6 +213,151 @@ export const Createsession = () => {
                   Open Large QR Code
                 </button>
               </div>
+              <button
+                onClick={handleEndSession}
+                className="w-full py-2 px-4 bg-red-600 hover:bg-red-700 rounded-md font-medium text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-800"
+              >
+                End Session
+              </button>
+            </div>
+          ) : (
+            <div className="p-6 space-y-6">
+              <h2 className="text-2xl font-bold text-white text-center">
+                Create Session
+              </h2>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label
+                    htmlFor="course"
+                    className="block text-sm font-medium text-gray-300 mb-1"
+                  >
+                    Select your Course
+                  </label>
+                  <select
+                    id="course"
+                    name="course"
+                    value={formData.course}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select a course</option>
+                    {data.courses.map((course) => (
+                      <option key={course.courseID} value={course.courseID}>
+                        {course.courseName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="date"
+                    className="block text-sm font-medium text-gray-300 mb-1"
+                  >
+                    Date
+                  </label>
+                  <input
+                    type="text"
+                    id="date"
+                    name="date"
+                    value={formData.date}
+                    readOnly
+                    className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-not-allowed"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label
+                      htmlFor="startTime"
+                      className="block text-sm font-medium text-gray-300 mb-1"
+                    >
+                      Start time
+                    </label>
+                    <input
+                      type="time"
+                      id="startTime"
+                      name="startTime"
+                      value={formData.startTime}
+                      onChange={handleInputChange}
+                      className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="endTime"
+                      className="block text-sm font-medium text-gray-300 mb-1"
+                    >
+                      End time
+                    </label>
+                    <input
+                      type="time"
+                      id="endTime"
+                      name="endTime"
+                      value={formData.endTime}
+                      onChange={handleInputChange}
+                      className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="lectureHall"
+                    className="block text-sm font-medium text-gray-300 mb-1"
+                  >
+                    Lecture Hall
+                  </label>
+                  <select
+                    id="lectureHall"
+                    name="lectureHall"
+                    value={formData.lectureHall}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select a lecture hall</option>
+                    {data.lectureHalls.map((hall) => (
+                      <option
+                        key={hall.lectureHallID}
+                        value={hall.lectureHallID}
+                      >
+                        {hall.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="expirationMinutes"
+                    className="block text-sm font-medium text-gray-300 mb-1"
+                  >
+                    Expiration Time (minutes)
+                  </label>
+                  <input
+                    type="number"
+                    id="expirationMinutes"
+                    name="expirationMinutes"
+                    value={formData.expirationMinutes}
+                    onChange={handleInputChange}
+                    min="1"
+                    max="60"
+                    className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 rounded-md font-medium text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800"
+                >
+                  Create Session
+                </button>
+              </form>
             </div>
           )}
         </main>
