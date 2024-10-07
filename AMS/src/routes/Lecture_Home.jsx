@@ -238,7 +238,7 @@ export const Lecture_Home = () => {
                     />
                   </svg>
 
-                  <span class="ml-3">Create Session</span>
+                  <span class="ml-3"> Session</span>
                 </Link>
               </li>
               {/* Manage Courses */}
