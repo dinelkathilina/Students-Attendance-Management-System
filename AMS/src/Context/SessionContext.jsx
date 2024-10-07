@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import authservice from '../../services/authservice';
 
 const SessionContext = createContext();
@@ -10,7 +10,7 @@ export const SessionProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const fetchActiveSession = async () => {
+  const fetchActiveSession = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
@@ -30,13 +30,13 @@ export const SessionProvider = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchActiveSession();
     const intervalId = setInterval(fetchActiveSession, 60000); // Refresh every minute
     return () => clearInterval(intervalId);
-  }, []);
+  }, [fetchActiveSession]);
 
   useEffect(() => {
     let timer;
@@ -58,38 +58,44 @@ export const SessionProvider = ({ children }) => {
     return () => clearInterval(timer);
   }, [sessionData]);
 
-  const startSession = (data) => {
+  const startSession = useCallback((data) => {
     setSessionData({
       ...data,
       timeRemaining: data.timeRemaining || data.expirationMinutes * 60
     });
-  };
+  }, []);
 
-  const endSession = async () => {
+  const endSession = useCallback(async () => {
     if (!sessionData) return;
     
+    setIsLoading(true);
+    setError(null);
     try {
       await authservice.endSession(sessionData.sessionID);
       setSessionData(null);
     } catch (err) {
       console.error('Error ending session:', err);
       setError('Failed to end session');
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }, [sessionData]);
 
-  const refreshSession = () => {
+  const refreshSession = useCallback(() => {
     fetchActiveSession();
+  }, [fetchActiveSession]);
+
+  const contextValue = {
+    sessionData,
+    startSession,
+    endSession,
+    refreshSession,
+    isLoading,
+    error
   };
 
   return (
-    <SessionContext.Provider value={{ 
-      sessionData, 
-      startSession, 
-      endSession, 
-      refreshSession,
-      isLoading,
-      error
-    }}>
+    <SessionContext.Provider value={contextValue}>
       {children}
     </SessionContext.Provider>
   );
