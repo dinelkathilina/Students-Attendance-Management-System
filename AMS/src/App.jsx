@@ -5,7 +5,7 @@ import 'flowbite/dist/flowbite.min.css';
 import { SessionProvider } from './Context/SessionContext';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import WebSocketManager from './Components/WebSocketManager';
+
 function App() {
 
   useEffect(() => {
@@ -15,7 +15,7 @@ function App() {
   return (
     <>
     <SessionProvider>
-    <WebSocketManager/>
+
     <Outlet />
     <ToastContainer position="top-right" autoClose={3000} />
     
