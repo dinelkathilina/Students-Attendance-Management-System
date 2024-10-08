@@ -302,7 +302,7 @@ const authservice = {
     } catch (error) {
       if (error.response && error.response.status === 404) {
         console.log('No active session found');
-        return null;
+        return null; // Return null instead of throwing an error
       }
       console.error('Error fetching active session:', error);
       throw error;

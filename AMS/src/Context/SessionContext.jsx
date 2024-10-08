@@ -7,27 +7,20 @@ export const useSession = () => useContext(SessionContext);
 
 export const SessionProvider = ({ children }) => {
   const [sessionData, setSessionData] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   const fetchActiveSession = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
     try {
       const activeSession = await authservice.getActiveSession();
       if (activeSession) {
         setSessionData({
           ...activeSession,
-          timeRemaining: activeSession.remainingTime,
+          timeRemaining: activeSession.remainingTime
         });
       } else {
         setSessionData(null);
       }
-    } catch (err) {
-      console.error("Error fetching active session:", err);
-      setError("Failed to fetch active session");
-    } finally {
-      setIsLoading(false);
+    } catch (error) {
+      console.error("Error fetching active session:", error);
     }
   }, []);
 
@@ -41,15 +34,14 @@ export const SessionProvider = ({ children }) => {
     let timer;
     if (sessionData && sessionData.timeRemaining > 0) {
       timer = setInterval(() => {
-        setSessionData((prevData) => {
+        setSessionData(prevData => {
           if (!prevData || prevData.timeRemaining <= 1) {
             clearInterval(timer);
-            endSession();
             return null;
           }
           return {
             ...prevData,
-            timeRemaining: prevData.timeRemaining - 1,
+            timeRemaining: prevData.timeRemaining - 1
           };
         });
       }, 1000);
@@ -66,18 +58,9 @@ export const SessionProvider = ({ children }) => {
   }, []);
 
   const endSession = useCallback(async () => {
-    if (!sessionData) return;
-
-    setIsLoading(true);
-    setError(null);
-    try {
+    if (sessionData) {
       await authservice.endSession(sessionData.sessionID);
       setSessionData(null);
-    } catch (err) {
-      console.error("Error ending session:", err);
-      setError("Failed to end session");
-    } finally {
-      setIsLoading(false);
     }
   }, [sessionData]);
 
@@ -86,7 +69,12 @@ export const SessionProvider = ({ children }) => {
   }, [fetchActiveSession]);
 
   return (
-    <SessionContext.Provider value={{ sessionData, startSession, endSession, refreshSession, isLoading, error }}>
+    <SessionContext.Provider value={{ 
+      sessionData, 
+      startSession, 
+      endSession, 
+      refreshSession,
+    }}>
       {children}
     </SessionContext.Provider>
   );
