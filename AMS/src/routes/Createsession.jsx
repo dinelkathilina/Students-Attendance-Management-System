@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
 import QRCode from "qrcode";
 import { useSession } from "../Context/SessionContext";
 import authservice from "../../services/authservice";
@@ -19,6 +18,7 @@ export const Createsession = () => {
     lectureHall: "",
     expirationMinutes: 5,
   });
+  const [formErrors, setFormErrors] = useState({});
 
   useEffect(() => {
     const fetchData = async () => {
@@ -28,6 +28,7 @@ export const Createsession = () => {
         setData({ courses, lectureHalls });
       } catch (error) {
         console.error("Error fetching data:", error);
+        setFormErrors(prevErrors => ({...prevErrors, fetchError: "Failed to load courses and lecture halls"}));
       }
     };
 
@@ -41,6 +42,7 @@ export const Createsession = () => {
       ...prevData,
       [name]: value,
     }));
+    setFormErrors(prevErrors => ({...prevErrors, [name]: ''}));
 
     if (name === "course") {
       try {
@@ -54,42 +56,58 @@ export const Createsession = () => {
         }
       } catch (error) {
         console.error("Error fetching course time:", error);
+        setFormErrors(prevErrors => ({...prevErrors, courseTime: "Failed to fetch course time"}));
       }
     }
   };
 
   const handleEndSession = async () => {
     if (window.confirm("Are you sure you want to end the current session?")) {
-      await endSession();
-      await refreshSession();
+      try {
+        await endSession();
+        await refreshSession();
+      } catch (error) {
+        console.error("Error ending session:", error);
+        alert("Failed to end session. Please try again.");
+      }
     }
   };
 
-  const generateSessionCode = () => {
-    const { course, date, startTime, endTime, lectureHall } = formData;
-    const randomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-    return `${course}-${date}-${startTime}-${endTime}-${lectureHall}-${randomCode}`;
+  const validateForm = () => {
+    const errors = {};
+    if (!formData.course) errors.course = "Please select a course";
+    if (!formData.startTime) errors.startTime = "Please enter a start time";
+    if (!formData.endTime) errors.endTime = "Please enter an end time";
+    if (!formData.lectureHall) errors.lectureHall = "Please select a lecture hall";
+    if (!formData.expirationMinutes) errors.expirationMinutes = "Please enter expiration time";
+    
+    const startDateTime = new Date(`${formData.date}T${formData.startTime}`);
+    const endDateTime = new Date(`${formData.date}T${formData.endTime}`);
+    if (endDateTime <= startDateTime) errors.endTime = "End time must be after start time";
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (sessionData) {
-      alert("A session is already active. Please wait for it to expire.");
+      alert("A session is already active. Please wait for it to expire or end it manually.");
       return;
     }
+
+    if (!validateForm()) return;
 
     try {
       const creationTime = new Date(`${formData.date}T${formData.startTime}`);
       const expirationTime = new Date(
         creationTime.getTime() + formData.expirationMinutes * 60000
       );
-      const generatedSessionCode = generateSessionCode();
 
       const newSessionData = {
         courseID: parseInt(formData.course, 10),
         lectureHallID: parseInt(formData.lectureHall, 10),
         creationTime: creationTime.toISOString(),
-        sessionCode: generatedSessionCode,
         expirationTime: expirationTime.toISOString(),
         timeRemaining: formData.expirationMinutes * 60,
       };
@@ -98,10 +116,15 @@ export const Createsession = () => {
       startSession({
         ...newSessionData,
         sessionCode: response.sessionCode,
+        sessionID: response.sessionID,
       });
     } catch (error) {
       console.error("Error creating session:", error);
-      alert("Failed to create session. Please try again.");
+      if (error.response && error.response.data) {
+        alert(`Failed to create session: ${error.response.data}`);
+      } else {
+        alert("Failed to create session. Please try again.");
+      }
     }
   };
 
@@ -168,18 +191,17 @@ export const Createsession = () => {
     );
   }
 
-
   if (error) {
-    return <div className=" text-red-600 text-center">Error: {error}</div>;
+    return <div className="text-red-600 text-center">Error: {error}</div>;
   }
 
   return (
     <div className="flex flex-col h-full bg-gray-900 overflow-y-auto">
-      <div className="flex-grow flex items-center justify-center  p-4">
+      <div className="flex-grow flex items-center justify-center p-4">
         <main className="w-full max-w-2xl bg-gray-800 rounded-lg shadow-md overflow-hidden">
           {sessionData ? (
             <div className="p-6 space-y-6">
-              <h2 className="text-2xl font-bold text-white text-center">
+              <h2 className="text-2xl md:text-3xl font-bold text-white text-center">
                 Active Session
               </h2>
               <p className="text-white">
@@ -225,9 +247,12 @@ export const Createsession = () => {
             </div>
           ) : (
             <div className="p-6 space-y-6">
-              <h2 className="text-2xl font-bold text-white text-center">
+              <h2 className="text-2xl md:text-3xl font-bold text-white text-center">
                 Create Session
               </h2>
+              {formErrors.fetchError && (
+                <p className="text-red-500 text-sm">{formErrors.fetchError}</p>
+              )}
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label
@@ -241,7 +266,6 @@ export const Createsession = () => {
                     name="course"
                     value={formData.course}
                     onChange={handleInputChange}
-                    required
                     className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Select a course</option>
@@ -251,6 +275,9 @@ export const Createsession = () => {
                       </option>
                     ))}
                   </select>
+                  {formErrors.course && (
+                    <p className="text-red-500 text-sm">{formErrors.course}</p>
+                  )}
                 </div>
 
                 <div>
@@ -270,7 +297,7 @@ export const Createsession = () => {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label
                       htmlFor="startTime"
@@ -285,8 +312,10 @@ export const Createsession = () => {
                       value={formData.startTime}
                       onChange={handleInputChange}
                       className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
                     />
+                    {formErrors.startTime && (
+                      <p className="text-red-500 text-sm">{formErrors.startTime}</p>
+                    )}
                   </div>
                   <div>
                     <label
@@ -302,8 +331,10 @@ export const Createsession = () => {
                       value={formData.endTime}
                       onChange={handleInputChange}
                       className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
                     />
+                    {formErrors.endTime && (
+                      <p className="text-red-500 text-sm">{formErrors.endTime}</p>
+                    )}
                   </div>
                 </div>
 
@@ -319,7 +350,6 @@ export const Createsession = () => {
                     name="lectureHall"
                     value={formData.lectureHall}
                     onChange={handleInputChange}
-                    required
                     className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Select a lecture hall</option>
@@ -332,6 +362,9 @@ export const Createsession = () => {
                       </option>
                     ))}
                   </select>
+                  {formErrors.lectureHall && (
+                    <p className="text-red-500 text-sm">{formErrors.lectureHall}</p>
+                  )}
                 </div>
 
                 <div>
@@ -350,8 +383,10 @@ export const Createsession = () => {
                     min="1"
                     max="60"
                     className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
                   />
+                  {formErrors.expirationMinutes && (
+                    <p className="text-red-500 text-sm">{formErrors.expirationMinutes}</p>
+                  )}
                 </div>
 
                 <button

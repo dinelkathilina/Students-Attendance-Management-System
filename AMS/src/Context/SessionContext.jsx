@@ -1,11 +1,5 @@
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  useCallback,
-} from "react";
-import authservice from "../../services/authservice";
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import authservice from '../../services/authservice';
 
 const SessionContext = createContext();
 
@@ -50,6 +44,7 @@ export const SessionProvider = ({ children }) => {
         setSessionData((prevData) => {
           if (!prevData || prevData.timeRemaining <= 1) {
             clearInterval(timer);
+            endSession();
             return null;
           }
           return {
@@ -89,15 +84,6 @@ export const SessionProvider = ({ children }) => {
   const refreshSession = useCallback(() => {
     fetchActiveSession();
   }, [fetchActiveSession]);
-
-  const contextValue = {
-    sessionData,
-    startSession,
-    endSession,
-    refreshSession,
-    isLoading,
-    error,
-  };
 
   return (
     <SessionContext.Provider value={{ sessionData, startSession, endSession, refreshSession, isLoading, error }}>
