@@ -50,11 +50,11 @@ export const Createsession = () => {
     };
   }, [refreshSession]);
 
-  useEffect(() => {
+ /* useEffect(() => {
     if (sessionData && !sessionData.qrCodeUrl) {
       generateQRCode(sessionData.sessionCode).then((url) => {});
     }
-  }, [sessionData, generateQRCode]);
+  }, [sessionData, generateQRCode]);*/
 
   useEffect(() => {
     if (sessionData) {

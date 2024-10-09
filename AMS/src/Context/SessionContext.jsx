@@ -53,7 +53,7 @@ export const SessionProvider = ({ children }) => {
 
   useEffect(() => {
     fetchActiveSession();
-    const intervalId = setInterval(fetchActiveSession, 20000);
+    const intervalId = setInterval(fetchActiveSession, 10000);
     return () => clearInterval(intervalId);
   }, [fetchActiveSession]);
 
