@@ -149,14 +149,21 @@ const authservice = {
   createSession: async (sessionData) => {
     const token = localStorage.getItem('token');
     if (!token) return null;
-
+  
     try {
+      console.log('Sending session data:', JSON.stringify(sessionData, null, 2));
       const response = await axios.post(`${API_URL}/api/session/create`, sessionData, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      console.log('Session creation response:', response.data);
       return response.data;
     } catch (error) {
       console.error('Error creating session:', error);
+      if (error.response) {
+        console.error('Error response:', error.response.data);
+        console.error('Status:', error.response.status);
+        console.error('Headers:', error.response.headers);
+      }
       throw error;
     }
   },
@@ -293,7 +300,7 @@ const authservice = {
   getActiveSession: async () => {
     const token = localStorage.getItem('token');
     if (!token) return null;
-
+  
     try {
       const response = await axios.get(`${API_URL}/api/session/active`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -301,8 +308,8 @@ const authservice = {
       return response.data;
     } catch (error) {
       if (error.response && error.response.status === 404) {
-        // No active session found, this is not an error
-        return null;
+        console.log('No active session found');
+        return null; // Return null instead of throwing an error
       }
       console.error('Error fetching active session:', error);
       throw error;
@@ -320,6 +327,21 @@ const authservice = {
     } catch (error) {
       console.error('Error ending session:', error);
       throw error;
+    }
+  },
+
+  getCourseTime: async (courseId) => {
+    const token = localStorage.getItem('token');
+    if (!token) return null;
+  
+    try {
+      const response = await axios.get(`${API_URL}/api/session/course-times/${courseId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching course time:', error);
+      return null;
     }
   },
 

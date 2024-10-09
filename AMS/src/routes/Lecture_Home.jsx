@@ -4,7 +4,7 @@ import { initFlowbite } from "flowbite";
 import CourseScheduleDisplay from "../Components/CourseScheduleDisplay";
 import authservice from "../../services/authservice";
 import signalRService from "../../services/signalRService";
-import { useSession } from "../../src/Context/SessionContext";
+import { useSession } from "../Context/SessionContext";
 
 export const Lecture_Home = () => {
   const [userName, setUserName] = useState("");
@@ -15,10 +15,10 @@ export const Lecture_Home = () => {
   const [showCoursesTimes, setShowCoursesTimes] = useState(true);
 
   const [checkedInStudents, setCheckedInStudents] = useState([]);
-  const [currentSession, setCurrentSession] = useState(null);
+  const { sessionData, refreshSession } = useSession();
   const navigate = useNavigate();
   const location = useLocation();
-  const {  refreshSession } = useSession();
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -35,7 +35,6 @@ export const Lecture_Home = () => {
         const coursesData = await authservice.getLecturerCoursesTime();
         setCourses(coursesData);
 
-        // Refresh the session data
         await refreshSession();
 
         setIsLoading(false);
@@ -61,18 +60,15 @@ export const Lecture_Home = () => {
     return () => {
       signalRService.stopConnection();
     };
-  }, [navigate, location.pathname]);
+  }, [navigate, location.pathname, refreshSession]);
 
-  const handleCreateSession = async (sessionData) => {
-    try {
-      const response = await authservice.createSession(sessionData);
-      setCurrentSession(response);
-      await signalRService.joinSession(response.sessionCode);
-    } catch (error) {
-      console.error("Error creating session:", error);
-      setError("Failed to create session. Please try again.");
+  useEffect(() => {
+    if (sessionData) {
+      signalRService.joinSession(sessionData.sessionCode);
     }
-  };
+  }, [sessionData]);
+
+
 
   const handleLogout = () => {
     navigate("/logout");
@@ -361,10 +357,10 @@ export const Lecture_Home = () => {
             <Outlet />
           )}
         </main>
-        {currentSession && (
+        {sessionData && (
           <div className="bg-white p-6 rounded-lg shadow-md mt-4">
             <h3 className="text-xl font-bold mb-2">Current Session</h3>
-            <p>Session Code: {currentSession.sessionCode}</p>
+            <p>Session Code: {sessionData.sessionCode}</p>
             <h4 className="text-lg font-semibold mt-4 mb-2">
               Checked-in Students
             </h4>
