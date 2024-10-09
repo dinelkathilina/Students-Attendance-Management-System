@@ -5,12 +5,14 @@ import authservice from "../../services/authservice";
 import { useSession } from "../Context/SessionContext";
 import signalRService from "../../services/signalRService";
 export const Createsession = () => {
-  const { sessionData, startSession, endSession, refreshSession } =
-    useSession();
-  const [data, setData] = useState({
-    courses: [],
-    lectureHalls: [],
-  });
+  const {
+    sessionData,
+    startSession,
+    endSession,
+    refreshSession,
+    generateQRCode,
+  } = useSession();
+  const [data, setData] = useState({ courses: [], lectureHalls: [] });
   const [formData, setFormData] = useState({
     course: "",
     date: new Date().toISOString().split("T")[0],
@@ -21,20 +23,9 @@ export const Createsession = () => {
   });
   const [formErrors, setFormErrors] = useState({});
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [qrCodeUrl, setQrCodeUrl] = useState("");
+
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const getSriLankaDate = () => {
-    const date = new Date();
-    const sriLankaTime = new Intl.DateTimeFormat('en-US', {
-      timeZone: 'Asia/Colombo',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    }).format(date);
-    const [month, day, year] = sriLankaTime.split('/');
-    return `${year}-${month}-${day}`;
-  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -43,13 +34,6 @@ export const Createsession = () => {
         const lectureHalls = await authservice.getLectureHalls();
         setData({ courses, lectureHalls });
         await refreshSession();
-
-        // Update the date in formData to ensure it's always current Sri Lanka date
-        setFormData(prevData => ({
-          ...prevData,
-          date: getSriLankaDate()
-        }));
-
         setIsLoading(false);
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -67,56 +51,52 @@ export const Createsession = () => {
   }, [refreshSession]);
 
   useEffect(() => {
+    if (sessionData && !sessionData.qrCodeUrl) {
+      generateQRCode(sessionData.sessionCode).then((url) => {});
+    }
+  }, [sessionData, generateQRCode]);
+
+  useEffect(() => {
     if (sessionData) {
       signalRService.joinSession(sessionData.sessionCode);
     }
   }, [sessionData]);
 
-
-  useEffect(() => {
-    const fetchActiveSession = async () => {
-      try {
-        const activeSession = await authservice.getActiveSession();
-        if (activeSession) {
-          startSession({
-            ...activeSession,
-            timeRemaining: activeSession.remainingTime,
-          });
-        }
-      } catch (error) {
-        console.error("Error fetching active session:", error);
-      }
-    };
-
-    fetchActiveSession();
-  }, [startSession]);
-
-  const handleInputChange = useCallback(async (e) => {
-    const { name, value } = e.target;
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: value,
-    }));
-    setFormErrors((prevErrors) => ({ ...prevErrors, [name]: "" }));
-
-    if (name === "course") {
-      try {
-        const courseTime = await authservice.getCourseTime(value);
-        if (courseTime) {
-          setFormData((prevData) => ({
-            ...prevData,
-            startTime: courseTime.startTime,
-            endTime: courseTime.endTime,
-          }));
-        }
-      } catch (error) {
-        console.error("Error fetching course time:", error);
-        setFormErrors((prevErrors) => ({
-          ...prevErrors,
-          courseTime: "Failed to fetch course time",
-        }));
-      }
+  const openQRCodeInNewTab = useCallback(() => {
+    if (sessionData && sessionData.qrCodeUrl) {
+      const newTab = window.open();
+      newTab.document.write(`
+        <html>
+          <head>
+            <title>QR Code for Session: ${sessionData.sessionCode}</title>
+            <style>
+              body {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                margin: 0;
+                background-color: #1a202c;
+              }
+              img {
+                max-width: 80vmin;
+                max-height: 80vmin;
+              }
+            </style>
+          </head>
+          <body>
+            <img src="${sessionData.qrCodeUrl}" alt="Session QR Code">
+          </body>
+        </html>
+      `);
+      newTab.document.close();
     }
+  }, [sessionData]);
+
+  const handleInputChange = useCallback((e) => {
+    const { name, value } = e.target;
+    setFormData((prevData) => ({ ...prevData, [name]: value }));
+    setFormErrors((prevErrors) => ({ ...prevErrors, [name]: "" }));
   }, []);
 
   const validateForm = useCallback(() => {
@@ -139,17 +119,15 @@ export const Createsession = () => {
   }, [formData]);
 
   const handleSubmit = useCallback(
-    async (e) => {
+    (e) => {
       e.preventDefault();
       if (sessionData) {
-        alert(
+        toast.error(
           "A session is already active. Please wait for it to expire or end it manually."
         );
         return;
       }
-
       if (!validateForm()) return;
-
       setShowConfirmDialog(true);
     },
     [sessionData, validateForm]
@@ -157,33 +135,33 @@ export const Createsession = () => {
 
   const confirmCreateSession = useCallback(async () => {
     setShowConfirmDialog(false);
-
     try {
-      // Convert local time to UTC for server
-      const localDate = new Date(`${formData.date}T${formData.startTime}`);
-      const utcCreationTime = new Date(localDate.toUTCString()).toISOString();
-      
-      const expirationTime = new Date(localDate.getTime() + formData.expirationMinutes * 60000);
-      const utcExpirationTime = new Date(expirationTime.toUTCString()).toISOString();
-
-      const localEndTime = new Date(`${formData.date}T${formData.endTime}`);
-      const utcLectureEndTime = new Date(localEndTime.toUTCString()).toISOString();
-
       const newSessionData = {
         courseID: parseInt(formData.course, 10),
         lectureHallID: parseInt(formData.lectureHall, 10),
-        creationTime: utcCreationTime,
-        expirationTime: utcExpirationTime,
-        lectureEndTime: utcLectureEndTime,
-        expirationMinutes: formData.expirationMinutes,
+        date: formData.date,
+        lectureStartTime: formData.startTime,
+        lectureEndTime: formData.endTime,
+        qrCodeExpirationMinutes: parseInt(formData.expirationMinutes, 10),
       };
 
+      console.log(
+        "Sending session data:",
+        JSON.stringify(newSessionData, null, 2)
+      );
       const response = await authservice.createSession(newSessionData);
+      console.log("Session creation response:", response);
+
+      // Generate QR Code
+      const qrCodeDataUrl = await generateQRCode(response.sessionCode);
+
       const fullSessionData = {
-        ...newSessionData,
-        sessionCode: response.sessionCode,
-        sessionID: response.sessionID,
-        timeRemaining: formData.expirationMinutes * 60,
+        ...response,
+        remainingTime:
+          (new Date(response.expirationTime) -
+            new Date(response.creationTime)) /
+          1000,
+        qrCodeUrl: qrCodeDataUrl,
       };
 
       startSession(fullSessionData);
@@ -195,30 +173,16 @@ export const Createsession = () => {
       toast.success("Session created successfully!");
     } catch (error) {
       console.error("Error creating session:", error);
-      toast.error("Failed to create session. Please try again.");
-    }
-  }, [formData, startSession]);
-  //this useEffect to generate QR code when sessionData changes
-  useEffect(() => {
-    const generateQRCode = async () => {
-      if (sessionData && sessionData.sessionCode) {
-        try {
-          const qrCodeDataUrl = await QRCode.toDataURL(
-            sessionData.sessionCode,
-            {
-              width: 200,
-              color: { dark: "#FFF", light: "#1a202c" },
-            }
-          );
-          setQrCodeUrl(qrCodeDataUrl);
-        } catch (error) {
-          console.error("Error generating QR code:", error);
-        }
+      if (error.response) {
+        console.error("Error response data:", error.response.data);
+        console.error("Error response status:", error.response.status);
+        console.error("Error response headers:", error.response.headers);
       }
-    };
-
-    generateQRCode();
-  }, [sessionData]);
+      toast.error(
+        `Failed to create session: ${error.message || "Please try again."}`
+      );
+    }
+  }, [formData, startSession, generateQRCode]);
 
   const handleEndSession = useCallback(async () => {
     if (window.confirm("Are you sure you want to end the current session?")) {
@@ -226,7 +190,6 @@ export const Createsession = () => {
         await signalRService.leaveSession(sessionData.sessionCode);
         await endSession();
         await refreshSession();
-        setQrCodeUrl("");
         toast.info("Session ended successfully.");
       } catch (error) {
         console.error("Error ending session:", error);
@@ -255,6 +218,8 @@ export const Createsession = () => {
     return <div className="text-red-600 text-center">Error: {error}</div>;
   }
 
+
+
   return (
     <div className="flex flex-col h-full bg-gray-900 overflow-y-auto">
       <div className="flex-grow flex items-center justify-center p-4">
@@ -271,8 +236,22 @@ export const Createsession = () => {
                 Time Remaining: {formatTime(sessionData.timeRemaining)}
               </p>
               <div className="flex flex-col items-center">
-                {qrCodeUrl && (
-                  <img src={qrCodeUrl} alt="Session QR Code" className="mb-4" />
+                {sessionData.qrCodeUrl ? (
+                  <>
+                    <img
+                      src={sessionData.qrCodeUrl}
+                      alt="Session QR Code"
+                      className="mb-4"
+                    />
+                    <button
+                      onClick={openQRCodeInNewTab}
+                      className="mb-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                    >
+                      Open QR Code in New Tab
+                    </button>
+                  </>
+                ) : (
+                  <p className="text-white mb-4">QR Code not available</p>
                 )}
               </div>
               <button
