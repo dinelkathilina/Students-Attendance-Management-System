@@ -17,16 +17,20 @@ export const SessionProvider = ({ children }) => {
 
   const generateQRCode = useCallback(async (sessionCode) => {
     try {
-      const qrCodeDataUrl = await QRCode.toDataURL(sessionCode, {
-        width: 200,
-        color: { dark: "#FFF", light: "#1a202c" },
+      const qrCodeSvg = await QRCode.toString(sessionCode, {
+        type: "svg",  // Specify the type as 'svg'
+        color: {
+          dark: "#FFF",  // Dark color (QR code color)
+          light: "#1a202c",  // Light color (background)
+        },
       });
-      return qrCodeDataUrl;
+      return qrCodeSvg; // Return SVG as a string
     } catch (error) {
       console.error("Error generating QR code:", error);
       return null;
     }
   }, []);
+  
 
   const fetchActiveSession = useCallback(async () => {
     try {

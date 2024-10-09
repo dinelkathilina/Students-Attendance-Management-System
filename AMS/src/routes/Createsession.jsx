@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import QRCode from "qrcode";
+
 import { toast } from "react-toastify";
 import authservice from "../../services/authservice";
 import { useSession } from "../Context/SessionContext";
@@ -82,10 +82,18 @@ export const Createsession = () => {
                 max-width: 80vmin;
                 max-height: 80vmin;
               }
+                .qr-container {
+                  width: 100%;
+                  max-width: 500px;
+                  max-height: 500px;
+                }
+                
             </style>
           </head>
           <body>
-            <img src="${sessionData.qrCodeUrl}" alt="Session QR Code">
+            <div class="qr-container">
+                ${sessionData.qrCodeUrl}
+              </div>
           </body>
         </html>
       `);
@@ -153,7 +161,7 @@ export const Createsession = () => {
       console.log("Session creation response:", response);
 
       // Generate QR Code
-      const qrCodeDataUrl = await generateQRCode(response.sessionCode);
+      const qrCodeSvg = await generateQRCode(response.sessionCode);
 
       const fullSessionData = {
         ...response,
@@ -161,7 +169,7 @@ export const Createsession = () => {
           (new Date(response.expirationTime) -
             new Date(response.creationTime)) /
           1000,
-        qrCodeUrl: qrCodeDataUrl,
+        qrCodeUrl: qrCodeSvg,
       };
 
       startSession(fullSessionData);
@@ -218,8 +226,6 @@ export const Createsession = () => {
     return <div className="text-red-600 text-center">Error: {error}</div>;
   }
 
-
-
   return (
     <div className="flex flex-col h-full bg-gray-900 overflow-y-auto">
       <div className="flex-grow flex items-center justify-center p-4">
@@ -238,11 +244,14 @@ export const Createsession = () => {
               <div className="flex flex-col items-center">
                 {sessionData.qrCodeUrl ? (
                   <>
-                    <img
-                      src={sessionData.qrCodeUrl}
-                      alt="Session QR Code"
-                      className="mb-4"
-                    />
+                    {/* Small QR Code display */}
+                    <div className="w-48 h-48 mb-4">
+                      <div
+                        dangerouslySetInnerHTML={{
+                          __html: sessionData.qrCodeUrl,
+                        }}
+                      />
+                    </div>
                     <button
                       onClick={openQRCodeInNewTab}
                       className="mb-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
