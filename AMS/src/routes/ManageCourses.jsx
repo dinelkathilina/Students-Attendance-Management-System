@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { initFlowbite } from "flowbite";
 import authservice from "../../services/authservice";
-import { toast } from 'react-toastify';
+import { toast } from "react-toastify";
 
 const ManageCourses = () => {
   const [courses, setCourses] = useState([]);
@@ -30,8 +30,9 @@ const ManageCourses = () => {
     } catch (error) {
       setError("Failed to fetch courses. Please try again later.");
       console.error("Error fetching courses:", error);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   const handleInputChange = (e, index = null) => {
@@ -79,38 +80,59 @@ const ManageCourses = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+  
     try {
       const courseData = {
         ...formData,
         semester: parseInt(formData.semester, 10),
       };
+      console.log("Payload being sent:", JSON.stringify(courseData, null, 2));
+      
       let response;
       if (editingCourse) {
+        console.log("Updating course with ID:", editingCourse.courseID);
         response = await authservice.updateCourse(editingCourse.courseID, courseData);
+        console.log("Update response:", response);
+        
+        if (response && (response.success || response.courseID)) {
+          toast.success("Course updated successfully");
+          setIsModalOpen(false);
+          setEditingCourse(null);
+          resetFormData();
+          
+          // Update the local state directly
+          setCourses(prevCourses => prevCourses.map(course => 
+            course.courseID === editingCourse.courseID ? {...course, ...courseData} : course
+          ));
+          
+          // Optionally, still fetch courses to ensure consistency with server
+          await fetchCourses();
+        } else {
+          toast.error("Failed to update course. Please try again.");
+        }
       } else {
         response = await authservice.createCourse(courseData);
-      }
-  
-      // Check if the response indicates success
-      if (response && response.courseID) {
-        toast.success(editingCourse ? "Course updated successfully" : "Course created successfully");
-        setIsModalOpen(false);
-        setEditingCourse(null);
-        resetFormData();
-        await fetchCourses(); // Refresh the course list
-      } else {
-        // If response doesn't have courseID, it might be an error
-        toast.error("Failed to save course. Please try again.");
+        console.log("Create response:", response);
+        
+        if (response && response.courseID) {
+          toast.success("Course created successfully");
+          setIsModalOpen(false);
+          setEditingCourse(null);
+          resetFormData();
+          await fetchCourses();
+        } else {
+          toast.error("Failed to create course. Please try again.");
+        }
       }
     } catch (error) {
+      console.error("Error saving course:", error);
       if (error.response && error.response.data) {
-        toast.error(error.response.data);
+        toast.error(typeof error.response.data === 'string' ? error.response.data : 'An error occurred while saving the course.');
       } else if (error.message) {
         toast.error(error.message);
       } else {
         toast.error("Failed to save course. Please try again.");
       }
-      console.error("Error saving course:", error);
     } finally {
       setIsLoading(false);
     }
@@ -149,9 +171,12 @@ const ManageCourses = () => {
       await authservice.deleteCourse(deletingCourseId);
       await fetchCourses();
       setDeletingCourseId(null);
+      toast.success("Course deleted successfully");
     } catch (error) {
       setError("Failed to delete course. Please try again.");
       console.error("Error deleting course:", error);
+      toast.error("Failed to delete course. Please try again."); 
+
     }
   };
 

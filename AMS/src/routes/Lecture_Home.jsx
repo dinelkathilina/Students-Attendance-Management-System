@@ -357,23 +357,7 @@ export const Lecture_Home = () => {
             <Outlet />
           )}
         </main>
-        {sessionData && (
-          <div className="bg-white p-6 rounded-lg shadow-md mt-4">
-            <h3 className="text-xl font-bold mb-2">Current Session</h3>
-            <p>Session Code: {sessionData.sessionCode}</p>
-            <h4 className="text-lg font-semibold mt-4 mb-2">
-              Checked-in Students
-            </h4>
-            <ul>
-              {checkedInStudents.map((student, index) => (
-                <li key={index}>
-                  {student.studentName} -{" "}
-                  {new Date(student.checkInTime).toLocaleTimeString()}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+        
       </div>
     </>
   );

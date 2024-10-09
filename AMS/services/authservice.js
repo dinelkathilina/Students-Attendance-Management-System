@@ -243,12 +243,12 @@ const authservice = {
   updateCourse: async (courseId, courseData) => {
     const token = localStorage.getItem('token');
     if (!token) throw new Error("No authentication token found");
-
+  
     try {
       const response = await axios.put(`${API_URL}/api/manage-courses/courses/${courseId}`, courseData, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      return response.data; // Return the response data
+      return response.status === 204 ? { success: true } : response.data;
     } catch (error) {
       if (error.response && error.response.data) {
         throw new Error(error.response.data);
