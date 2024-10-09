@@ -30,8 +30,9 @@ const ManageCourses = () => {
     } catch (error) {
       setError("Failed to fetch courses. Please try again later.");
       console.error("Error fetching courses:", error);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   const handleInputChange = (e, index = null) => {
@@ -98,6 +99,13 @@ const ManageCourses = () => {
           setIsModalOpen(false);
           setEditingCourse(null);
           resetFormData();
+          
+          // Update the local state directly
+          setCourses(prevCourses => prevCourses.map(course => 
+            course.courseID === editingCourse.courseID ? {...course, ...courseData} : course
+          ));
+          
+          // Optionally, still fetch courses to ensure consistency with server
           await fetchCourses();
         } else {
           toast.error("Failed to update course. Please try again.");
@@ -163,9 +171,12 @@ const ManageCourses = () => {
       await authservice.deleteCourse(deletingCourseId);
       await fetchCourses();
       setDeletingCourseId(null);
+      toast.success("Course deleted successfully");
     } catch (error) {
       setError("Failed to delete course. Please try again.");
       console.error("Error deleting course:", error);
+      toast.error("Failed to delete course. Please try again."); 
+
     }
   };
 
