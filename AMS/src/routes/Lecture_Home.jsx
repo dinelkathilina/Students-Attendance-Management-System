@@ -265,6 +265,7 @@ export const Lecture_Home = () => {
                     }`}
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
+
                     <svg
                       className="w-6 h-6 transition-colors duration-200"
                       aria-hidden="true"
@@ -278,6 +279,7 @@ export const Lecture_Home = () => {
                   </Link>
                 </li>
               ))}
+
             </ul>
           </div>
         </aside>
