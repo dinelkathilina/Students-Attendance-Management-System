@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect, useCallback } from "react";
+import { QrCode, ClipboardCheck, CalendarDays } from 'lucide-react'
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { initFlowbite } from "flowbite";
 import authservice from "../../services/authservice";
 import { ToastContainer, toast } from "react-toastify";
@@ -13,6 +14,13 @@ export const Student_Home = () => {
   const [showScanner, setShowScanner] = useState(false);
   const [checkInInfo, setCheckInInfo] = useState(null);
   const navigate = useNavigate();
+  const location = useLocation();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const menuItems = [
+    { to: "scan-qr", icon: QrCode, label: "Scan QR Code" },
+    { to: "attendance-report", icon: ClipboardCheck, label: "Attendance Report" },
+    { to: "view-schedule", icon: CalendarDays, label: "View Schedule" },
+  ];
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -34,7 +42,6 @@ export const Student_Home = () => {
 
     fetchUserProfile();
     initFlowbite();
-    // Test toast
     toast.info("Welcome to the Student Home page!");
   }, [navigate]);
 
@@ -43,11 +50,14 @@ export const Student_Home = () => {
     navigate("/");
   }, [navigate]);
 
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
   const toggleScanner = () => setShowScanner(!showScanner);
 
   const handleCheckIn = async (qrCode) => {
-    setShowScanner(false); // Close scanner immediately after scan
-
+    setShowScanner(false);
     console.log("Attempting check-in with code:", qrCode);
 
     try {
@@ -55,16 +65,12 @@ export const Student_Home = () => {
       console.log("Check-in response:", response);
       toast.success(response.message);
       setCheckInInfo(response.sessionDetails);
-
-      // Join the SignalR group for this session
       await signalRService.joinSession(qrCode);
     } catch (error) {
       console.error("Error checking in:", error);
-
       if (error.response) {
         const errorMessage = error.response.data;
         console.log("Error response:", errorMessage);
-
         if (typeof errorMessage === "string") {
           toast.error(errorMessage);
         } else if (errorMessage.message) {
@@ -74,279 +80,193 @@ export const Student_Home = () => {
         }
       } else if (error.request) {
         console.log("Error request:", error.request);
-        toast.error(
-          "Network error. Please check your connection and try again."
-        );
+        toast.error("Network error. Please check your connection and try again.");
       } else {
         toast.error("An unexpected error occurred. Please try again later.");
       }
     }
   };
-  return (
-    <>
-      <div class="antialiased bg-gray-50 dark:bg-gray-900">
-        <nav class="bg-white border-b border-gray-200 px-4 py-2.5 dark:bg-gray-800 dark:border-gray-700 fixed left-0 right-0 top-0 z-50">
-          <div class="flex flex-wrap justify-between items-center">
-            <div class="flex justify-start items-center">
-              <button
-                data-drawer-target="drawer-navigation"
-                data-drawer-toggle="drawer-navigation"
-                aria-controls="drawer-navigation"
-                class="p-2 mr-2 text-gray-600 rounded-lg cursor-pointer md:hidden hover:text-gray-900 hover:bg-gray-100 focus:bg-gray-100 dark:focus:bg-gray-700 focus:ring-2 focus:ring-gray-100 dark:focus:ring-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
-              >
-                <svg
-                  aria-hidden="true"
-                  class="w-6 h-6"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    fill-rule="evenodd"
-                    d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
-                    clip-rule="evenodd"
-                  ></path>
-                </svg>
-                <svg
-                  aria-hidden="true"
-                  class="hidden w-6 h-6"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    fill-rule="evenodd"
-                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                    clip-rule="evenodd"
-                  ></path>
-                </svg>
-                <span class="sr-only">Toggle sidebar</span>
-              </button>
-              <a href="/" class="flex items-center justify-between mr-4">
-                <img src="presenT.svg" class="mr-3 h-8" alt="Flowbite Logo" />
-                <span class="self-center text-2xl font-semibold whitespace-nowrap dark:text-white">
-                  presenT
-                </span>
-              </a>
-            </div>
-            <div class="flex items-center lg:order-2">
-              {/* profile button with image */}
-              <button
-                type="button"
-                class="flex mx-3 text-sm bg-gray-800 rounded-full md:mr-0 focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600"
-                id="user-menu-button"
-                aria-expanded="false"
-                data-dropdown-toggle="dropdown"
-              >
-                <span class="sr-only">Open user menu</span>
-                <img
-                  class="w-8 h-8 rounded-full"
-                  src="user.png"
-                  alt="user photo"
-                />
-              </button>
-              {/* Dropdown menu in profile */}
-              <div
-                class="hidden z-50 my-4 w-56 text-base list-none bg-white rounded divide-y divide-gray-100 shadow dark:bg-gray-700 dark:divide-gray-600 "
-                id="dropdown"
-              >
-                <div class="py-3 px-4">
-                  <span class="block text-sm font-semibold text-gray-900 dark:text-white">
-                    {userName}
-                  </span>
-                  <span class="block text-sm text-gray-900 truncate dark:text-white">
-                    {userEmail}
-                  </span>
-                </div>
-                <ul
-                  class="py-1 text-gray-700 dark:text-gray-300"
-                  aria-labelledby="dropdown"
-                >
-                  <li>
-                    <a
-                      href="#"
-                      class="block py-2 px-4 text-sm hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-400 dark:hover:text-white"
-                    >
-                      My profile
-                    </a>
-                  </li>
-                </ul>
 
-                <ul
-                  class="py-1 text-gray-700 dark:text-gray-300"
-                  aria-labelledby="dropdown"
-                >
-                  <li>
-                    <a
-                      href="#"
-                      onClick={handleLogout}
-                      class="block py-2 px-4 text-sm hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
-                    >
-                      Sign out
-                    </a>
-                  </li>
-                </ul>
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-900 to-gray-900 text-white">
+      <nav className="bg-gray-800 border-b border-gray-700 px-4 py-2.5 fixed left-0 right-0 top-0 z-50">
+        <div className="flex flex-wrap justify-between items-center">
+          <div className="flex justify-start items-center">
+            <button
+              onClick={toggleMobileMenu}
+              className="p-2 mr-2 text-gray-400 rounded-lg cursor-pointer md:hidden hover:text-white hover:bg-gray-700 focus:bg-gray-700 focus:ring-2 focus:ring-gray-600"
+            >
+              <svg
+                aria-hidden="true"
+                className="w-6 h-6"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
+                  clipRule="evenodd"
+                ></path>
+              </svg>
+              <span className="sr-only">Toggle sidebar</span>
+            </button>
+            <a href="/" className="flex items-center justify-between mr-4">
+              <img src="presenT.svg" className="mr-3 h-8" alt="presenT Logo" />
+              <span className="self-center text-2xl font-semibold whitespace-nowrap text-white">
+                presenT
+              </span>
+            </a>
+          </div>
+          <div className="flex items-center lg:order-2">
+            <button
+              type="button"
+              className="flex mx-3 text-sm bg-gray-800 rounded-full md:mr-0 focus:ring-4 focus:ring-gray-600"
+              id="user-menu-button"
+              aria-expanded="false"
+              data-dropdown-toggle="dropdown"
+            >
+              <span className="sr-only">Open user menu</span>
+              <img
+                className="w-8 h-8 rounded-full"
+                src="user.png"
+                alt="user photo"
+              />
+            </button>
+            <div
+              className="hidden z-50 my-4 w-56 text-base list-none bg-gray-700 rounded divide-y divide-gray-600 shadow"
+              id="dropdown"
+            >
+              <div className="py-3 px-4">
+                <span className="block text-sm font-semibold text-white">
+                  {userName}
+                </span>
+                <span className="block text-sm text-gray-400 truncate">
+                  {userEmail}
+                </span>
+              </div>
+              <ul
+                className="py-1 text-gray-300"
+                aria-labelledby="dropdown"
+              >
+                <li>
+                  <a
+                    href="#"
+                    className="block py-2 px-4 text-sm hover:bg-gray-600 text-gray-400 hover:text-white"
+                  >
+                    My profile
+                  </a>
+                </li>
+              </ul>
+              <ul
+                className="py-1 text-gray-300"
+                aria-labelledby="dropdown"
+              >
+                <li>
+                  <a
+                    href="#"
+                    onClick={handleLogout}
+                    className="block py-2 px-4 text-sm hover:bg-gray-600 hover:text-white"
+                  >
+                    Sign out
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      <aside
+        className={`fixed top-0 left-0 z-40 w-64 h-screen pt-14 transition-transform bg-gray-800 border-r border-gray-700 md:translate-x-0 ${
+          isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+        aria-label="Sidenav"
+        id="drawer-navigation"
+      >
+        <div className="overflow-y-auto py-5 px-3 h-full bg-gray-800">
+          <ul className="space-y-2">
+          {menuItems.map((item, index) => (
+  <li key={index}>
+    <Link
+      to={item.to}
+      className={`flex items-center p-2 text-base font-medium rounded-lg transition-colors duration-200 ${
+        location.pathname.includes(item.to)
+          ? "text-white bg-blue-600"
+          : "text-gray-300 hover:bg-gray-700"
+      }`}
+      onClick={() => {
+        setIsMobileMenuOpen(false);
+        if (item.to === "scan-qr") toggleScanner();
+      }}
+    >
+      {React.createElement(item.icon, {
+        className: "w-6 h-6 transition-colors duration-200",
+        "aria-hidden": "true"
+      })}
+      <span className="ml-3">{item.label}</span>
+    </Link>
+  </li>
+))}
+          </ul>
+        </div>
+      </aside>
+
+      <main className={`p-4 md:ml-64 h-auto pt-20 ${isMobileMenuOpen ? 'ml-64' : ''}`}>
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-4xl font-bold mb-8 text-center text-white">Welcome, {userName}</h2>
+
+          {!showScanner && !checkInInfo && (
+            <div className="text-center">
+              <button
+                onClick={() => setShowScanner(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-lg text-xl font-semibold transition-colors duration-200 shadow-lg hover:shadow-xl"
+              >
+                Scan QR Code to Check In
+              </button>
+            </div>
+          )}
+
+          {showScanner && (
+            <div className="bg-gray-800 p-6 rounded-lg shadow-lg mb-8">
+              <QRScanner
+                onClose={() => setShowScanner(false)}
+                onCheckIn={handleCheckIn}
+              />
+            </div>
+          )}
+
+          {checkInInfo && (
+            <div className="mt-8 bg-gray-800 text-white p-8 rounded-lg shadow-lg">
+              <h3 className="text-3xl font-bold mb-6 text-center text-blue-400">Check-in Successful</h3>
+              <div className="space-y-4">
+                <p className="text-lg"><strong className="text-blue-300">Course:</strong> {checkInInfo.courseName}</p>
+                <p className="text-lg"><strong className="text-blue-300">Start Time:</strong> {new Date(checkInInfo.startTime).toLocaleTimeString()}</p>
+                <p className="text-lg"><strong className="text-blue-300">End Time:</strong> {new Date(checkInInfo.endTime).toLocaleTimeString()}</p>
               </div>
             </div>
-          </div>
-        </nav>
+          )}
+        </div>
+      </main>
 
-        <aside
-          class="fixed top-0 left-0 z-40 w-64 h-screen pt-14 transition-transform -translate-x-full bg-white border-r border-gray-200 md:translate-x-0 dark:bg-gray-800 dark:border-gray-700"
-          aria-label="Sidenav"
-          id="drawer-navigation"
-        >
-          <div class="overflow-y-auto py-5 px-3  h-full bg-white dark:bg-gray-800">
-            <ul class="space-y-3">
-              {/* Manage Courses */}
-              {/* <li>
-                <a
-                  href="#"
-                  class="flex items-center p-2 text-base font-medium text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group"
-                >
-                  <svg
-                    class="w-6 h-6 text-gray-800 dark:text-white"
-                    aria-hidden="true"
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      fill-rule="evenodd"
-                      d="M9 2.221V7H4.221a2 2 0 0 1 .365-.5L8.5 2.586A2 2 0 0 1 9 2.22ZM11 2v5a2 2 0 0 1-2 2H4v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2h-7ZM8 16a1 1 0 0 1 1-1h6a1 1 0 1 1 0 2H9a1 1 0 0 1-1-1Zm1-5a1 1 0 1 0 0 2h6a1 1 0 1 0 0-2H9Z"
-                      clip-rule="evenodd"
-                    />
-                  </svg>
-
-                  <span class="ml-3">Manage Courses</span>
-                </a>
-              </li>*/}
-
-              {/* QR Scannner */}
-              <li>
-                <button
-                  onClick={toggleScanner}
-                  className="flex items-center p-2 w-full text-base font-medium text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group"
-                >
-                  <svg
-                    className="w-6 h-6 text-gray-800 dark:text-white"
-                    aria-hidden="true"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 4v1m6 11h2m-6 0h-2v4m0-11v-4m0 4h4m-4 0l4-4m-4 4l4 4m-6-1h2M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-                    />
-                  </svg>
-                  <span className="ml-3">Scan QR Code</span>
-                </button>
-              </li>
-
-              {/* Attendance Report */}
-              <li>
-                <a
-                  href="#"
-                  class="flex items-center p-2 text-base font-medium text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group"
-                >
-                  <svg
-                    class="w-6 h-6 text-gray-800 dark:text-white"
-                    aria-hidden="true"
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="M6 16v-3h.375a.626.626 0 0 1 .625.626v1.749a.626.626 0 0 1-.626.625H6Zm6-2.5a.5.5 0 1 1 1 0v2a.5.5 0 0 1-1 0v-2Z" />
-                    <path
-                      fill-rule="evenodd"
-                      d="M11 7V2h7a2 2 0 0 1 2 2v5h1a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-1a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2H3a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h6a2 2 0 0 0 2-2Zm7.683 6.006 1.335-.024-.037-2-1.327.024a2.647 2.647 0 0 0-2.636 2.647v1.706a2.647 2.647 0 0 0 2.647 2.647H20v-2h-1.335a.647.647 0 0 1-.647-.647v-1.706a.647.647 0 0 1 .647-.647h.018ZM5 11a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1h1.376A2.626 2.626 0 0 0 9 15.375v-1.75A2.626 2.626 0 0 0 6.375 11H5Zm7.5 0a2.5 2.5 0 0 0-2.5 2.5v2a2.5 2.5 0 0 0 5 0v-2a2.5 2.5 0 0 0-2.5-2.5Z"
-                      clip-rule="evenodd"
-                    />
-                    <path d="M9 7V2.221a2 2 0 0 0-.5.365L4.586 6.5a2 2 0 0 0-.365.5H9Z" />
-                  </svg>
-
-                  <span class="ml-3">Attendance Report</span>
-                </a>
-              </li>
-              {/* Course Schedules */}
-              <li>
-                <a
-                  href="#"
-                  class="flex items-center p-2 text-base font-medium text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group"
-                >
-                  <svg
-                    class="w-6 h-6 text-gray-800 dark:text-white"
-                    aria-hidden="true"
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      fill-rule="evenodd"
-                      d="M5 5a1 1 0 0 0 1-1 1 1 0 1 1 2 0 1 1 0 0 0 1 1h1a1 1 0 0 0 1-1 1 1 0 1 1 2 0 1 1 0 0 0 1 1h1a1 1 0 0 0 1-1 1 1 0 1 1 2 0 1 1 0 0 0 1 1 2 2 0 0 1 2 2v1a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a2 2 0 0 1 2-2ZM3 19v-7a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Zm6.01-6a1 1 0 1 0-2 0 1 1 0 0 0 2 0Zm2 0a1 1 0 1 1 2 0 1 1 0 0 1-2 0Zm6 0a1 1 0 1 0-2 0 1 1 0 0 0 2 0Zm-10 4a1 1 0 1 1 2 0 1 1 0 0 1-2 0Zm6 0a1 1 0 1 0-2 0 1 1 0 0 0 2 0Zm2 0a1 1 0 1 1 2 0 1 1 0 0 1-2 0Z"
-                      clip-rule="evenodd"
-                    />
-                  </svg>
-
-                  <span class="ml-3">View Schedule</span>
-                </a>
-              </li>
-            </ul>
-          </div>
-        </aside>
-
-        <main className="p-4 md:ml-64 h-auto pt-20">
-        <h2 className="text-3xl font-semibold mb-4">Welcome, {userName}</h2>
+      {isMobileMenuOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-gray-900 opacity-50 md:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        ></div>
+      )}
         
-
-        {!showScanner && !checkInInfo && (
-          <button
-            onClick={() => setShowScanner(true)}
-            className="bg-blue-500 hover:bg-blue-600 px-6 py-3 rounded-lg text-lg font-semibold"
-          >
-            Scan QR Code to Check In
-          </button>
-        )}
-
-        {showScanner && (
-          <QRScanner
-            onClose={() => setShowScanner(false)}
-            onCheckIn={handleCheckIn}
-          />
-        )}
-
-        {checkInInfo && (
-          <div className="mt-8 bg-gray-800 p-6 rounded-lg">
-            <h3 className="text-2xl font-semibold mb-4">Check-in Successful</h3>
-            <p><strong>Course:</strong> {checkInInfo.courseName}</p>
-            <p><strong>Start Time:</strong> {new Date(checkInInfo.startTime).toLocaleTimeString()}</p>
-            <p><strong>End Time:</strong> {new Date(checkInInfo.endTime).toLocaleTimeString()}</p>
-          </div>
-        )}
-        </main>
-        
-        <ToastContainer
-          position="top-right"
-          autoClose={5000}
-          hideProgressBar={false}
-          newestOnTop={false}
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-        />
-      </div>
-    </>
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
+    </div>
   );
 };
