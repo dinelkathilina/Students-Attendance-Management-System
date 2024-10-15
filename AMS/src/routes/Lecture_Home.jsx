@@ -4,8 +4,7 @@ import { initFlowbite } from "flowbite";
 import CourseScheduleDisplay from "../Components/CourseScheduleDisplay";
 import authservice from "../../services/authservice";
 import signalRService from "../../services/signalRService";
-import { useSession } from "../../src/Context/SessionContext";
-
+import { useSession } from "../Context/SessionContext";
 export const Lecture_Home = () => {
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
@@ -13,12 +12,55 @@ export const Lecture_Home = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showCoursesTimes, setShowCoursesTimes] = useState(true);
-
+  
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [checkedInStudents, setCheckedInStudents] = useState([]);
-  const [currentSession, setCurrentSession] = useState(null);
+  const { sessionData, refreshSession } = useSession();
   const navigate = useNavigate();
   const location = useLocation();
-  const {  refreshSession } = useSession();
+
+  const menuItems = [
+    {
+      to: "create_session",
+      icon: "M2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10S2 17.523 2 12Zm11-4.243a1 1 0 1 0-2 0V11H7.757a1 1 0 1 0 0 2H11v3.243a1 1 0 1 0 2 0V13h3.243a1 1 0 1 0 0-2H13V7.757Z",
+      label: "Create Session",
+    },
+    {
+      to: "manage_courses",
+      icon: "M9 2.221V7H4.221a2 2 0 0 1 .365-.5L8.5 2.586A2 2 0 0 1 9 2.22ZM11 2v5a2 2 0 0 1-2 2H4v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2h-7ZM8 16a1 1 0 0 1 1-1h6a1 1 0 1 1 0 2H9a1 1 0 0 1-1-1Zm1-5a1 1 0 1 0 0 2h6a1 1 0 1 0 0-2H9Z",
+      label: "Manage Courses",
+    },
+    {
+      to: "report",
+      icon: "M6 16v-3h.375a.626.626 0 0 1 .625.626v1.749a.626.626 0 0 1-.626.625H6Zm6-2.5a.5.5 0 1 1 1 0v2a.5.5 0 0 1-1 0v-2Z M11 7V2h7a2 2 0 0 1 2 2v5h1a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-1a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2H3a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h6a2 2 0 0 0 2-2Zm7.683 6.006 1.335-.024-.037-2-1.327.024a2.647 2.647 0 0 0-2.636 2.647v1.706a2.647 2.647 0 0 0 2.647 2.647H20v-2h-1.335a.647.647 0 0 1-.647-.647v-1.706a.647.647 0 0 1 .647-.647h.018ZM5 11a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1h1.376A2.626 2.626 0 0 0 9 15.375v-1.75A2.626 2.626 0 0 0 6.375 11H5Zm7.5 0a2.5 2.5 0 0 0-2.5 2.5v2a2.5 2.5 0 0 0 5 0v-2a2.5 2.5 0 0 0-2.5-2.5Z M9 7V2.221a2 2 0 0 0-.5.365L4.586 6.5a2 2 0 0 0-.365.5H9Z",
+      label: "Attendance Report",
+    },
+    {
+      to: "course_schedules",
+      icon: "M5 5a1 1 0 0 0 1-1 1 1 0 1 1 2 0 1 1 0 0 0 1 1h1a1 1 0 0 0 1-1 1 1 0 1 1 2 0 1 1 0 0 0 1 1h1a1 1 0 0 0 1-1 1 1 0 1 1 2 0 1 1 0 0 0 1 1 2 2 0 0 1 2 2v1a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a2 2 0 0 1 2-2ZM3 19v-7a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Zm6.01-6a1 1 0 1 0-2 0 1 1 0 0 0 2 0Zm2 0a1 1 0 1 1 2 0 1 1 0 0 1-2 0Zm6 0a1 1 0 1 0-2 0 1 1 0 0 0 2 0Zm-10 4a1 1 0 1 1 2 0 1 1 0 0 1-2 0Zm6 0a1 1 0 1 0-2 0 1 1 0 0 0 2 0Zm2 0a1 1 0 1 1 2 0 1 1 0 0 1-2 0Z",
+      label: "Course Schedules",
+    },
+    {
+      to: "view-check-in",
+      icon: "M5 5a1 1 0 0 0 1-1 1 1 0 1 1 2 0 1 1 0 0 0 1 1h1a1 1 0 0 0 1-1 1 1 0 1 1 2 0 1 1 0 0 0 1 1h1a1 1 0 0 0 1-1 1 1 0 1 1 2 0 1 1 0 0 0 1 1 2 2 0 0 1 2 2v1a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a2 2 0 0 1 2-2ZM3 19v-7a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Zm6.01-6a1 1 0 1 0-2 0 1 1 0 0 0 2 0Zm2 0a1 1 0 1 1 2 0 1 1 0 0 1-2 0Zm6 0a1 1 0 1 0-2 0 1 1 0 0 0 2 0Zm-10 4a1 1 0 1 1 2 0 1 1 0 0 1-2 0Zm6 0a1 1 0 1 0-2 0 1 1 0 0 0 2 0Zm2 0a1 1 0 1 1 2 0 1 1 0 0 1-2 0Z",
+      label: "View Live Check-in",
+    },
+  ];
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -35,7 +77,6 @@ export const Lecture_Home = () => {
         const coursesData = await authservice.getLecturerCoursesTime();
         setCourses(coursesData);
 
-        // Refresh the session data
         await refreshSession();
 
         setIsLoading(false);
@@ -61,18 +102,13 @@ export const Lecture_Home = () => {
     return () => {
       signalRService.stopConnection();
     };
-  }, [navigate, location.pathname]);
+  }, [navigate, location.pathname, refreshSession]);
 
-  const handleCreateSession = async (sessionData) => {
-    try {
-      const response = await authservice.createSession(sessionData);
-      setCurrentSession(response);
-      await signalRService.joinSession(response.sessionCode);
-    } catch (error) {
-      console.error("Error creating session:", error);
-      setError("Failed to create session. Please try again.");
+  useEffect(() => {
+    if (sessionData) {
+      signalRService.joinSession(sessionData.sessionCode);
     }
-  };
+  }, [sessionData]);
 
   const handleLogout = () => {
     navigate("/logout");
@@ -106,6 +142,7 @@ export const Lecture_Home = () => {
           <div class="flex flex-wrap justify-between items-center">
             <div class="flex justify-start items-center">
               <button
+                onClick={toggleMobileMenu}
                 data-drawer-target="drawer-navigation"
                 data-drawer-toggle="drawer-navigation"
                 aria-controls="drawer-navigation"
@@ -207,147 +244,48 @@ export const Lecture_Home = () => {
             </div>
           </div>
         </nav>
-
         <aside
-          class="fixed top-0 left-0 z-40 w-64 h-screen pt-14 transition-transform -translate-x-full bg-white border-r border-gray-200 md:translate-x-0 dark:bg-gray-800 dark:border-gray-700"
+          className={`fixed top-0 left-0 z-40 w-64 h-screen pt-14 transition-transform bg-white border-r border-gray-200 dark:bg-gray-800 dark:border-gray-700 md:translate-x-0 
+            ${
+            isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
           aria-label="Sidenav"
           id="drawer-navigation"
         >
-          <div class="overflow-y-auto py-5 px-3  h-full bg-white dark:bg-gray-800">
-            <ul class="space-y-3">
-              {/* Create Seession */}
-
-              <li>
-                <Link
-                  to="create_session"
-                  class="flex items-center p-2 text-base font-medium text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group"
-                >
-                  <svg
-                    class="w-6 h-6 text-gray-800 dark:text-white"
-                    aria-hidden="true"
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
+          <div className="overflow-y-auto py-5 px-3 h-full bg-white dark:bg-gray-800">
+            <ul className="space-y-2">
+              {menuItems.map((item, index) => (
+                <li key={index}>
+                  <Link
+                    to={item.to}
+                    className={`flex items-center p-2 text-base font-medium rounded-lg transition-colors duration-200 ${
+                      location.pathname.includes(item.to)
+                        ? "text-blue-600 bg-blue-100 dark:bg-blue-700 dark:text-white"
+                        : "text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700"
+                    }`}
+                    onClick={() => setIsMobileMenuOpen(false)}
                   >
-                    <path
-                      fill-rule="evenodd"
-                      d="M2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10S2 17.523 2 12Zm11-4.243a1 1 0 1 0-2 0V11H7.757a1 1 0 1 0 0 2H11v3.243a1 1 0 1 0 2 0V13h3.243a1 1 0 1 0 0-2H13V7.757Z"
-                      clip-rule="evenodd"
-                    />
-                  </svg>
 
-                  <span class="ml-3">Create Session</span>
-                </Link>
-              </li>
-              {/* Manage Courses */}
-              <li>
-                <Link
-                  to="manage_courses"
-                  class="flex items-center p-2 text-base font-medium text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group"
-                >
-                  <svg
-                    class="w-6 h-6 text-gray-800 dark:text-white"
-                    aria-hidden="true"
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      fill-rule="evenodd"
-                      d="M9 2.221V7H4.221a2 2 0 0 1 .365-.5L8.5 2.586A2 2 0 0 1 9 2.22ZM11 2v5a2 2 0 0 1-2 2H4v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2h-7ZM8 16a1 1 0 0 1 1-1h6a1 1 0 1 1 0 2H9a1 1 0 0 1-1-1Zm1-5a1 1 0 1 0 0 2h6a1 1 0 1 0 0-2H9Z"
-                      clip-rule="evenodd"
-                    />
-                  </svg>
+                    <svg
+                      className="w-6 h-6 transition-colors duration-200"
+                      aria-hidden="true"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path fillRule="evenodd" d={item.icon} clipRule="evenodd" />
+                    </svg>
+                    <span className="ml-3">{item.label}</span>
+                  </Link>
+                </li>
+              ))}
 
-                  <span class="ml-3">Manage Courses</span>
-                </Link>
-              </li>
-              {/* Attendance Report */}
-              <li>
-                <Link
-                  to="report"
-                  class="flex items-center p-2 text-base font-medium text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group"
-                >
-                  <svg
-                    class="w-6 h-6 text-gray-800 dark:text-white"
-                    aria-hidden="true"
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="M6 16v-3h.375a.626.626 0 0 1 .625.626v1.749a.626.626 0 0 1-.626.625H6Zm6-2.5a.5.5 0 1 1 1 0v2a.5.5 0 0 1-1 0v-2Z" />
-                    <path
-                      fill-rule="evenodd"
-                      d="M11 7V2h7a2 2 0 0 1 2 2v5h1a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-1a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2H3a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h6a2 2 0 0 0 2-2Zm7.683 6.006 1.335-.024-.037-2-1.327.024a2.647 2.647 0 0 0-2.636 2.647v1.706a2.647 2.647 0 0 0 2.647 2.647H20v-2h-1.335a.647.647 0 0 1-.647-.647v-1.706a.647.647 0 0 1 .647-.647h.018ZM5 11a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1h1.376A2.626 2.626 0 0 0 9 15.375v-1.75A2.626 2.626 0 0 0 6.375 11H5Zm7.5 0a2.5 2.5 0 0 0-2.5 2.5v2a2.5 2.5 0 0 0 5 0v-2a2.5 2.5 0 0 0-2.5-2.5Z"
-                      clip-rule="evenodd"
-                    />
-                    <path d="M9 7V2.221a2 2 0 0 0-.5.365L4.586 6.5a2 2 0 0 0-.365.5H9Z" />
-                  </svg>
-
-                  <span class="ml-3">Attendance Report</span>
-                </Link>
-              </li>
-              {/* Course Schedules */}
-              <li>
-                <Link
-                  to="course_schedules"
-                  class="flex items-center p-2 text-base font-medium text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group"
-                >
-                  <svg
-                    class="w-6 h-6 text-gray-800 dark:text-white"
-                    aria-hidden="true"
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      fill-rule="evenodd"
-                      d="M5 5a1 1 0 0 0 1-1 1 1 0 1 1 2 0 1 1 0 0 0 1 1h1a1 1 0 0 0 1-1 1 1 0 1 1 2 0 1 1 0 0 0 1 1h1a1 1 0 0 0 1-1 1 1 0 1 1 2 0 1 1 0 0 0 1 1 2 2 0 0 1 2 2v1a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a2 2 0 0 1 2-2ZM3 19v-7a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Zm6.01-6a1 1 0 1 0-2 0 1 1 0 0 0 2 0Zm2 0a1 1 0 1 1 2 0 1 1 0 0 1-2 0Zm6 0a1 1 0 1 0-2 0 1 1 0 0 0 2 0Zm-10 4a1 1 0 1 1 2 0 1 1 0 0 1-2 0Zm6 0a1 1 0 1 0-2 0 1 1 0 0 0 2 0Zm2 0a1 1 0 1 1 2 0 1 1 0 0 1-2 0Z"
-                      clip-rule="evenodd"
-                    />
-                  </svg>
-
-                  <span class="ml-3">Course Schedules</span>
-                </Link>
-              </li>
-              {/* View Live Check-in */}
-              <li>
-                <Link
-                  to="view-check-in"
-                  class="flex items-center p-2 text-base font-medium text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group"
-                >
-                  <svg
-                    class="w-6 h-6 text-gray-800 dark:text-white"
-                    aria-hidden="true"
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      fill-rule="evenodd"
-                      d="M5 5a1 1 0 0 0 1-1 1 1 0 1 1 2 0 1 1 0 0 0 1 1h1a1 1 0 0 0 1-1 1 1 0 1 1 2 0 1 1 0 0 0 1 1h1a1 1 0 0 0 1-1 1 1 0 1 1 2 0 1 1 0 0 0 1 1 2 2 0 0 1 2 2v1a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a2 2 0 0 1 2-2ZM3 19v-7a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Zm6.01-6a1 1 0 1 0-2 0 1 1 0 0 0 2 0Zm2 0a1 1 0 1 1 2 0 1 1 0 0 1-2 0Zm6 0a1 1 0 1 0-2 0 1 1 0 0 0 2 0Zm-10 4a1 1 0 1 1 2 0 1 1 0 0 1-2 0Zm6 0a1 1 0 1 0-2 0 1 1 0 0 0 2 0Zm2 0a1 1 0 1 1 2 0 1 1 0 0 1-2 0Z"
-                      clip-rule="evenodd"
-                    />
-                  </svg>
-
-                  <span class="ml-3">View Live Check-in</span>
-                </Link>
-              </li>
             </ul>
           </div>
         </aside>
 
-        <main className="p-4 md:ml-64 h-screen pt-20">
+        <div className={`md:ml-64 ${isMobileMenuOpen ? 'ml-64' : ''}`}>
+        <main className="p-4  h-screen pt-20">
           {showCoursesTimes ? (
             <CourseScheduleDisplay
               courses={courses}
@@ -361,24 +299,14 @@ export const Lecture_Home = () => {
             <Outlet />
           )}
         </main>
-        {currentSession && (
-          <div className="bg-white p-6 rounded-lg shadow-md mt-4">
-            <h3 className="text-xl font-bold mb-2">Current Session</h3>
-            <p>Session Code: {currentSession.sessionCode}</p>
-            <h4 className="text-lg font-semibold mt-4 mb-2">
-              Checked-in Students
-            </h4>
-            <ul>
-              {checkedInStudents.map((student, index) => (
-                <li key={index}>
-                  {student.studentName} -{" "}
-                  {new Date(student.checkInTime).toLocaleTimeString()}
-                </li>
-              ))}
-            </ul>
-          </div>
+    </div>
+        {isMobileMenuOpen && (
+          <div
+            className="fixed inset-0 z-30 bg-gray-900 opacity-50 md:hidden"
+            onClick={() => setIsMobileMenuOpen(false)}
+          ></div>
         )}
       </div>
-    </>
+</>
   );
 };
