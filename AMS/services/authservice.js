@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 //const API_URL = 'https://sams-649404709699.us-central1.run.app'; 
- const API_URL = 'https://localhost:7243'; 
+ const API_URL = 'https://sams-service-649404709699.us-central1.run.app'; 
 
 const authservice = {
 
