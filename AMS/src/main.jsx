@@ -14,6 +14,8 @@ import { Report } from "./routes/Report";
 import { CourseSchedules } from "./routes/CourseSchedules";
 import "./index.css";
 import LiveChecking from "./routes/LiveChecking";
+import { StudentReport } from "./routes/StudentReport";
+import StudentSchedule from "./routes/StudentSchedule";
 const router = createBrowserRouter([
   {
     path: "/",
@@ -61,6 +63,16 @@ const router = createBrowserRouter([
             <Student_Home />
           </ProtectedRoute>
         ),
+        children:[
+          {
+            path: "attendance-report",
+            element: <StudentReport />,
+          },
+          {
+            path: "view-schedule",
+            element: <StudentSchedule />
+          }
+        ]
       },
       {
         path: "register",

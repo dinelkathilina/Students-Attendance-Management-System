@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { QrCode, ClipboardCheck, CalendarDays } from 'lucide-react'
-import { Link, useLocation, useNavigate } from "react-router-dom";
 import { initFlowbite } from "flowbite";
+import { QrCode, ClipboardCheck, CalendarDays } from 'lucide-react';
+import { Link, useLocation, useNavigate, Outlet } from "react-router-dom";
+
 import authservice from "../../services/authservice";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -13,14 +14,17 @@ export const Student_Home = () => {
   const [userEmail, setUserEmail] = useState("");
   const [showScanner, setShowScanner] = useState(false);
   const [checkInInfo, setCheckInInfo] = useState(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   const menuItems = [
-    { to: "scan-qr", icon: QrCode, label: "Scan QR Code" },
+    { to: "", icon: QrCode, label: "Scan QR Code" },
     { to: "attendance-report", icon: ClipboardCheck, label: "Attendance Report" },
     { to: "view-schedule", icon: CalendarDays, label: "View Schedule" },
   ];
+
+  const isHomePage = location.pathname === '/student_home';
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -50,12 +54,6 @@ export const Student_Home = () => {
     navigate("/");
   }, [navigate]);
 
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
-  };
-
-  const toggleScanner = () => setShowScanner(!showScanner);
-
   const handleCheckIn = async (qrCode) => {
     setShowScanner(false);
     console.log("Attempting check-in with code:", qrCode);
@@ -68,23 +66,71 @@ export const Student_Home = () => {
       await signalRService.joinSession(qrCode);
     } catch (error) {
       console.error("Error checking in:", error);
-      if (error.response) {
-        const errorMessage = error.response.data;
-        console.log("Error response:", errorMessage);
-        if (typeof errorMessage === "string") {
-          toast.error(errorMessage);
-        } else if (errorMessage.message) {
-          toast.error(errorMessage.message);
-        } else {
-          toast.error("An error occurred during check-in.");
-        }
-      } else if (error.request) {
-        console.log("Error request:", error.request);
-        toast.error("Network error. Please check your connection and try again.");
-      } else {
-        toast.error("An unexpected error occurred. Please try again later.");
-      }
+      const errorMessage = error.response?.data?.message || 
+                          (typeof error.response?.data === "string" ? error.response.data : null) ||
+                          (error.request ? "Network error. Please check your connection and try again." : 
+                          "An unexpected error occurred. Please try again later.");
+      toast.error(errorMessage);
     }
+  };
+
+  const isActiveRoute = useCallback((to) => {
+    if (to === "" && isHomePage) return true;
+    return location.pathname === `/student_home/${to}`;
+  }, [isHomePage, location.pathname]);
+
+  const renderMainContent = () => {
+    if (!isHomePage) return <Outlet />;
+
+    return (
+      <div className="max-w-4xl mx-auto">
+        <h2 className="text-4xl font-bold mb-8 text-center text-white">
+          Welcome, {userName}
+        </h2>
+
+        {!showScanner && !checkInInfo && (
+          <div className="text-center">
+            <button
+              onClick={() => setShowScanner(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-lg text-xl font-semibold transition-colors duration-200 shadow-lg hover:shadow-xl"
+            >
+              Scan QR Code to Check In
+            </button>
+          </div>
+        )}
+
+        {showScanner && (
+          <div className="bg-gray-800 p-6 rounded-lg shadow-lg mb-8">
+            <QRScanner
+              onClose={() => setShowScanner(false)}
+              onCheckIn={handleCheckIn}
+            />
+          </div>
+        )}
+
+        {checkInInfo && (
+          <div className="mt-8 bg-gray-800 text-white p-8 rounded-lg shadow-lg">
+            <h3 className="text-3xl font-bold mb-6 text-center text-blue-400">
+              Check-in Successful
+            </h3>
+            <div className="space-y-4">
+              <p className="text-lg">
+                <strong className="text-blue-300">Course:</strong>{" "}
+                {checkInInfo.courseName}
+              </p>
+              <p className="text-lg">
+                <strong className="text-blue-300">Start Time:</strong>{" "}
+                {new Date(checkInInfo.startTime).toLocaleTimeString()}
+              </p>
+              <p className="text-lg">
+                <strong className="text-blue-300">End Time:</strong>{" "}
+                {new Date(checkInInfo.endTime).toLocaleTimeString()}
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -93,11 +139,10 @@ export const Student_Home = () => {
         <div className="flex flex-wrap justify-between items-center">
           <div className="flex justify-start items-center">
             <button
-              onClick={toggleMobileMenu}
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="p-2 mr-2 text-gray-400 rounded-lg cursor-pointer md:hidden hover:text-white hover:bg-gray-700 focus:bg-gray-700 focus:ring-2 focus:ring-gray-600"
             >
               <svg
-                aria-hidden="true"
                 className="w-6 h-6"
                 fill="currentColor"
                 viewBox="0 0 20 20"
@@ -107,17 +152,18 @@ export const Student_Home = () => {
                   fillRule="evenodd"
                   d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
                   clipRule="evenodd"
-                ></path>
+                />
               </svg>
               <span className="sr-only">Toggle sidebar</span>
             </button>
-            <a href="/" className="flex items-center justify-between mr-4">
+            <Link to="/" className="flex items-center justify-between mr-4">
               <img src="presenT.svg" className="mr-3 h-8" alt="presenT Logo" />
               <span className="self-center text-2xl font-semibold whitespace-nowrap text-white">
                 presenT
               </span>
-            </a>
+            </Link>
           </div>
+          
           <div className="flex items-center lg:order-2">
             <button
               type="button"
@@ -145,31 +191,14 @@ export const Student_Home = () => {
                   {userEmail}
                 </span>
               </div>
-              <ul
-                className="py-1 text-gray-300"
-                aria-labelledby="dropdown"
-              >
+              <ul className="py-1 text-gray-300">
                 <li>
-                  <a
-                    href="#"
-                    className="block py-2 px-4 text-sm hover:bg-gray-600 text-gray-400 hover:text-white"
-                  >
-                    My profile
-                  </a>
-                </li>
-              </ul>
-              <ul
-                className="py-1 text-gray-300"
-                aria-labelledby="dropdown"
-              >
-                <li>
-                  <a
-                    href="#"
+                  <button
                     onClick={handleLogout}
-                    className="block py-2 px-4 text-sm hover:bg-gray-600 hover:text-white"
+                    className="block w-full text-left py-2 px-4 text-sm hover:bg-gray-600 hover:text-white"
                   >
                     Sign out
-                  </a>
+                  </button>
                 </li>
               </ul>
             </div>
@@ -182,78 +211,47 @@ export const Student_Home = () => {
           isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
         aria-label="Sidenav"
-        id="drawer-navigation"
       >
         <div className="overflow-y-auto py-5 px-3 h-full bg-gray-800">
           <ul className="space-y-2">
-          {menuItems.map((item, index) => (
-  <li key={index}>
-    <Link
-      to={item.to}
-      className={`flex items-center p-2 text-base font-medium rounded-lg transition-colors duration-200 ${
-        location.pathname.includes(item.to)
-          ? "text-white bg-blue-600"
-          : "text-gray-300 hover:bg-gray-700"
-      }`}
-      onClick={() => {
-        setIsMobileMenuOpen(false);
-        if (item.to === "scan-qr") toggleScanner();
-      }}
-    >
-      {React.createElement(item.icon, {
-        className: "w-6 h-6 transition-colors duration-200",
-        "aria-hidden": "true"
-      })}
-      <span className="ml-3">{item.label}</span>
-    </Link>
-  </li>
-))}
+            {menuItems.map((item, index) => (
+              <li key={index}>
+                <Link
+                  to={item.to}
+                  className={`flex items-center p-2 text-base font-medium rounded-lg transition-colors duration-200 ${
+                    isActiveRoute(item.to)
+                      ? "text-white bg-blue-600"
+                      : "text-gray-300 hover:bg-gray-700"
+                  }`}
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    if (item.to === "") {
+                      setShowScanner(false);
+                      setCheckInInfo(null);
+                    }
+                  }}
+                >
+                  {React.createElement(item.icon, {
+                    className: "w-6 h-6 transition-colors duration-200",
+                    "aria-hidden": "true"
+                  })}
+                  <span className="ml-3">{item.label}</span>
+                </Link>
+              </li>
+            ))}
           </ul>
         </div>
       </aside>
 
       <main className={`p-4 md:ml-64 h-auto pt-20 ${isMobileMenuOpen ? 'ml-64' : ''}`}>
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-4xl font-bold mb-8 text-center text-white">Welcome, {userName}</h2>
-
-          {!showScanner && !checkInInfo && (
-            <div className="text-center">
-              <button
-                onClick={() => setShowScanner(true)}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-lg text-xl font-semibold transition-colors duration-200 shadow-lg hover:shadow-xl"
-              >
-                Scan QR Code to Check In
-              </button>
-            </div>
-          )}
-
-          {showScanner && (
-            <div className="bg-gray-800 p-6 rounded-lg shadow-lg mb-8">
-              <QRScanner
-                onClose={() => setShowScanner(false)}
-                onCheckIn={handleCheckIn}
-              />
-            </div>
-          )}
-
-          {checkInInfo && (
-            <div className="mt-8 bg-gray-800 text-white p-8 rounded-lg shadow-lg">
-              <h3 className="text-3xl font-bold mb-6 text-center text-blue-400">Check-in Successful</h3>
-              <div className="space-y-4">
-                <p className="text-lg"><strong className="text-blue-300">Course:</strong> {checkInInfo.courseName}</p>
-                <p className="text-lg"><strong className="text-blue-300">Start Time:</strong> {new Date(checkInInfo.startTime).toLocaleTimeString()}</p>
-                <p className="text-lg"><strong className="text-blue-300">End Time:</strong> {new Date(checkInInfo.endTime).toLocaleTimeString()}</p>
-              </div>
-            </div>
-          )}
-        </div>
+        {renderMainContent()}
       </main>
 
       {isMobileMenuOpen && (
         <div
           className="fixed inset-0 z-30 bg-gray-900 opacity-50 md:hidden"
           onClick={() => setIsMobileMenuOpen(false)}
-        ></div>
+        />
       )}
         
       <ToastContainer

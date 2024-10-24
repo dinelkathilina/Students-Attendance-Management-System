@@ -345,6 +345,51 @@ const authservice = {
     }
   },
 
+  getStudentAttendanceReport: async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return null;
+  
+    try {
+      const response = await axios.get(`${API_URL}/api/student/attendance-report`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching student attendance report:', error);
+      throw error;
+    }
+  },
+
+  getStudentSchedules: async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return null;
+  
+    try {
+      const response = await axios.get(`${API_URL}/api/student/schedules`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching student schedules:', error);
+      throw error;
+    }
+  },
+  
+  getStudentTodaySchedule: async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return null;
+  
+    try {
+      const response = await axios.get(`${API_URL}/api/student/schedules/today`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching today\'s schedule:', error);
+      throw error;
+    }
+  }
+
 
 };
 
