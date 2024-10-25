@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { initFlowbite } from "flowbite";
 import { QrCode, ClipboardCheck, CalendarDays } from 'lucide-react';
 import { Link, useLocation, useNavigate, Outlet } from "react-router-dom";
-
+import { parseISO, addMinutes, format } from "date-fns";
 import authservice from "../../services/authservice";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -25,6 +25,11 @@ export const Student_Home = () => {
   ];
 
   const isHomePage = location.pathname === '/student_home';
+  const formatToSriLankaTime = (timeString) => {
+    const date = parseISO(timeString);
+    const sriLankaTime = addMinutes(date, 330); // Add 5 hours and 30 minutes
+    return format(sriLankaTime, "HH:mm:ss");
+  };
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -120,11 +125,11 @@ export const Student_Home = () => {
               </p>
               <p className="text-lg">
                 <strong className="text-blue-300">Start Time:</strong>{" "}
-                {new Date(checkInInfo.startTime).toLocaleTimeString()}
+                {formatToSriLankaTime(checkInInfo.startTime)}
               </p>
               <p className="text-lg">
                 <strong className="text-blue-300">End Time:</strong>{" "}
-                {new Date(checkInInfo.endTime).toLocaleTimeString()}
+                {formatToSriLankaTime(checkInInfo.endTime)}
               </p>
             </div>
           </div>
