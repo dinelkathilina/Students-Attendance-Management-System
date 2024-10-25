@@ -1,290 +1,385 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { AlertCircle, Loader2, Check, X, Eye, EyeOff } from "lucide-react";
 import authservice from "../../services/authservice";
-export const Signup = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [name, setName] = useState("");
-  const [termsAccepted, setTermsAccepted] = useState(false);
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
 
+export const Signup = () => {
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    termsAccepted: false
+  });
+
+  const [errors, setErrors] = useState({
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    terms: "",
+    server: ""
+  });
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const navigate = useNavigate();
+
+  // Password strength criteria
+  const getPasswordStrength = (password) => {
+    const criteria = {
+      minLength: password.length >= 8,
+      hasUpper: /[A-Z]/.test(password),
+      hasLower: /[a-z]/.test(password),
+      hasSymbol: /[!@#$%^&*(),.?":{}|<>]/.test(password),
+    };
+    
+    const strength = Object.values(criteria).filter(Boolean).length;
+    return { criteria, strength };
+  };
+
+  const validateEmail = (email) => {
+    if (!email) return "Email is required";
+    if (!email.endsWith("@ucsi.ruh.ac.lk") && !email.endsWith("@dcs.ruh.ac.lk")) {
+      return "Please use your institutional email (@ucsi.ruh.ac.lk or @dcs.ruh.ac.lk)";
+    }
+    return "";
+  };
+
+  const validateName = (name) => {
+    if (!name) return "Name is required";
+    if (name.length < 2) return "Name must be at least 2 characters long";
+    return "";
+  };
+
+  const validatePassword = (password) => {
+    if (!password) return "Password is required";
+    const { criteria } = getPasswordStrength(password);
+    if (!criteria.minLength) return "Password must be at least 8 characters";
+    if (!criteria.hasUpper || !criteria.hasLower) return "Password must contain both uppercase and lowercase letters";
+    if (!criteria.hasSymbol) return "Password must contain at least one symbol";
+    return "";
+  };
+
+  const validateConfirmPassword = (password, confirmPassword) => {
+    if (!confirmPassword) return "Please confirm your password";
+    if (password !== confirmPassword) return "Passwords do not match";
+    return "";
+  };
+
+  const togglePasswordVisibility = (e) => {
+    e.preventDefault();
+    setShowPassword(!showPassword);
+  };
+
+  const toggleConfirmPasswordVisibility = (e) => {
+    e.preventDefault();
+    setShowConfirmPassword(!showConfirmPassword);
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    const inputValue = type === "checkbox" ? checked : value;
+
+    setFormData(prev => ({
+      ...prev,
+      [name]: inputValue
+    }));
+
+    // Clear errors on change
+    setErrors(prev => ({
+      ...prev,
+      [name]: "",
+      server: ""
+    }));
+
+    // Validate on change for immediate feedback
+    let error = "";
+    switch (name) {
+      case "email":
+        error = validateEmail(value);
+        break;
+      case "name":
+        error = validateName(value);
+        break;
+      case "password":
+        error = validatePassword(value);
+        break;
+      case "confirmPassword":
+        error = validateConfirmPassword(formData.password, value);
+        break;
+      default:
+        break;
+    }
+
+    if (error) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: error
+      }));
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
+    
+    // Validate all fields
+    const errors = {
+      name: validateName(formData.name),
+      email: validateEmail(formData.email),
+      password: validatePassword(formData.password),
+      confirmPassword: validateConfirmPassword(formData.password, formData.confirmPassword),
+      terms: !formData.termsAccepted ? "You must accept the Terms and Conditions" : ""
+    };
 
-    if (!termsAccepted) {
-      setError(
-        "You must accept the Terms and Conditions to create an account."
-      );
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError("Passwords do not match.");
+    if (Object.values(errors).some(error => error)) {
+      setErrors(errors);
       return;
     }
 
     setIsLoading(true);
+    setErrors({ ...errors, server: "" });
 
     try {
-      const response = await authservice.register(
-        name,
-        email,
-        password,
-        confirmPassword
+      await authservice.register(
+        formData.name,
+        formData.email,
+        formData.password,
+        formData.confirmPassword
       );
-      console.log("Registration successful:", response);
 
-      // Automatically log in the user after successful registration
-      await authservice.login(email, password, false);
-
-      // Redirect to appropriate page based on user type
-      const user = authservice.getCurrentUser();
-      if (user.userType === "Student") {
-        navigate("/student_home");
-      } else if (user.userType === "Lecturer") {
-        navigate("/lecture_home");
-      } else {
-        navigate("/");
-      }
+      // Auto login after successful registration
+      const loginResponse = await authservice.login(formData.email, formData.password, false);
+      
+      navigate(loginResponse.userType === "Student" ? "/student_home" : "/lecture_home");
     } catch (error) {
       console.error("Registration error:", error);
-      if (error.response && error.response.data) {
-        setError(
-          error.response.data.message ||
-            "An error occurred during registration."
-        );
-      } else {
-        setError("An error occurred during registration. Please try again.");
-      }
+      setErrors(prev => ({
+        ...prev,
+        server: error.response?.data?.message || "An error occurred during registration. Please try again."
+      }));
     } finally {
       setIsLoading(false);
     }
   };
-  return (
-    <>
-      <section class="bg-gray-50 dark:bg-gray-900 min-h-screen">
-        <div class="flex flex-col items-center justify-center px-6 py-8 mx-auto md:h-screen lg:py-0">
-          <a
-            href="/"
-            class="flex items-center mb-6 text-2xl font-semibold text-gray-900 dark:text-white"
-          >
-            <img class="w-8 h-8 mr-2" src="/presenT.svg" alt="logo" />
-            presenT
-          </a>
-          <div class="w-full bg-white rounded-lg shadow dark:border md:mt-0 sm:max-w-md xl:p-0 dark:bg-gray-800 dark:border-gray-700">
-            <div class="p-6 space-y-4 md:space-y-6 sm:p-8">
-              <h1 class="text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl dark:text-white">
-                Create an account
-              </h1>
-              {error && <p className="text-red-500 text-sm">{error}</p>}
-              <form class="space-y-4 md:space-y-6" onSubmit={handleSubmit}>
-                <div>
-                  <label
-                    htmlFor="name"
-                    className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                  >
-                    Your name
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    id="name"
-                    className="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                    placeholder="Janitha Pramod"
-                    required
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label
-                    for="email"
-                    class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                  >
-                    Your email
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                    id="email"
-                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                    placeholder="abcd@usci.ruh.ac.lk or abcd@dcs.ruh.ac.lk"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                </div>
-                <div>
-                <div class="mb-6">
-          <label
-            for="password"
-            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-          >
-            Your password
-          </label>
-          <input
-            data-popover-target="popover-password"
-            data-popover-placement="bottom"
-            type="password"
-            id="password"
-            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-            required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-          />
-          <div
-            data-popover
-            id="popover-password"
-            role="tooltip"
-            class="absolute z-10 invisible inline-block text-sm text-gray-500 transition-opacity duration-300 bg-white border border-gray-200 rounded-lg shadow-sm opacity-0 w-72 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400"
-          >
-            <div class="p-3 space-y-2">
-              <h3 class="font-semibold text-gray-900 dark:text-white">
-                Must have at least 8 characters
-              </h3>
-              <div class="grid grid-cols-4 gap-2">
-                <div class="h-1 bg-orange-300 dark:bg-orange-400"></div>
-                <div class="h-1 bg-orange-300 dark:bg-orange-400"></div>
-                <div class="h-1 bg-gray-200 dark:bg-gray-600"></div>
-                <div class="h-1 bg-gray-200 dark:bg-gray-600"></div>
-              </div>
-              <p>It’s better to have:</p>
-              <ul>
-                <li class="flex items-center mb-1">
-                  <svg
-                    class="w-3.5 h-3.5 me-2 text-green-400 dark:text-green-500"
-                    aria-hidden="true"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 16 12"
-                  >
-                    <path
-                      stroke="currentColor"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M1 5.917 5.724 10.5 15 1.5"
-                    />
-                  </svg>
-                  Upper & lower case letters
-                </li>
-                <li class="flex items-center mb-1">
-                <svg
-                    class="w-3.5 h-3.5 me-2 text-green-400 dark:text-green-500"
-                    aria-hidden="true"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 16 12"
-                  >
-                    <path
-                      stroke="currentColor"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M1 5.917 5.724 10.5 15 1.5"
-                    />
-                  </svg>
-                  A symbol (#$&)
-                </li>
-                
-              </ul>
-            </div>
-            <div data-popper-arrow></div>
-          </div>
-        </div>
-                </div>
-                <div>
-                  <label
-                    for="confirm-password"
-                    class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                  >
-                    Confirm password
-                  </label>
-                  <input
-                    type="password"
-                    name="confirm-password"
-                    id="confirm-password"
-                    placeholder=""
-                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                    required
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                  />
-                </div>
-                <div class="flex items-start">
-                  <div class="flex items-center h-5">
-                    <input
-                      id="terms"
-                      aria-describedby="terms"
-                      type="checkbox"
-                      class="w-4 h-4 border border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300 dark:bg-gray-700 dark:border-gray-600 dark:focus:ring-primary-600 dark:ring-offset-gray-800"
-                      required
-                      checked={termsAccepted}
-                      onChange={(e) => setTermsAccepted(e.target.checked)}
-                    />
-                  </div>
-                  <div class="ml-3 text-sm">
-                    <label
-                      for="terms"
-                      class="font-light text-gray-500 dark:text-gray-300"
-                    >
-                      I accept the{" "}
-                      <a
-                        class="font-medium text-primary-600 hover:underline dark:text-primary-500"
-                        href="#"
-                      >
-                        Terms and Conditions
-                      </a>
-                    </label>
-                  </div>
-                </div>
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  class="w-full text-white bg-primary-600 hover:bg-primary-700 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800"
-                >
-                  {isLoading ? "Creating account..." : "Create an account"}
-                </button>
-                {/* SIGNUP WITH GOOGLE */}
-                {/* <button
-                  type="button"
-                  class="w-full flex items-center justify-center text-white bg-[#4285F4] hover:bg-[#4285F4]/90 focus:ring-4 focus:outline-none focus:ring-[#4285F4]/50 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:focus:ring-[#4285F4]/55 me-2 mb-2"
-                >
-                  <svg
-                    class="w-4 h-4 me-2"
-                    aria-hidden="true"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="currentColor"
-                    viewBox="0 0 18 19"
-                  >
-                    <path
-                      fill-rule="evenodd"
-                      d="M8.842 18.083a8.8 8.8 0 0 1-8.65-8.948 8.841 8.841 0 0 1 8.8-8.652h.153a8.464 8.464 0 0 1 5.7 2.257l-2.193 2.038A5.27 5.27 0 0 0 9.09 3.4a5.882 5.882 0 0 0-.2 11.76h.124a5.091 5.091 0 0 0 5.248-4.057L14.3 11H9V8h8.34c.066.543.095 1.09.088 1.636-.086 5.053-3.463 8.449-8.4 8.449l-.186-.002Z"
-                      clip-rule="evenodd"
-                    />
-                  </svg>
-                  Sign in with Google
-                </button> */}
 
-                <p class="text-sm font-light text-gray-500 dark:text-gray-400">
-                  Already have an account?{" "}
-                  <a
-                    href="/"
-                    class="font-medium text-primary-600 hover:underline dark:text-primary-500"
-                  >
-                    Login here
-                  </a>
-                </p>
-              </form>
+  const { criteria, strength } = getPasswordStrength(formData.password);
+
+  return (
+    <section className="bg-gray-900 min-h-screen">
+      <div className="flex flex-col items-center justify-center px-6 py-8 mx-auto md:h-screen lg:py-0">
+        <a href="/" className="flex items-center mb-6 text-2xl font-semibold text-white">
+          <img className="w-8 h-8 mr-2" src="/presenT.svg" alt="logo" />
+          presenT
+        </a>
+
+        <div className="w-full max-w-md bg-gray-800 rounded-lg shadow-md p-6">
+          <h1 className="text-xl font-bold text-white mb-6">
+            Create an account
+          </h1>
+
+          {errors.server && (
+            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 text-red-500 rounded-lg flex items-center gap-2">
+              <AlertCircle className="w-5 h-5" />
+              <span>{errors.server}</span>
             </div>
-          </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block mb-2 text-sm font-medium text-gray-300">
+                Your name
+              </label>
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                className={`w-full px-3 py-2 border rounded-lg bg-gray-700 text-white placeholder-gray-400
+                  ${errors.name ? 'border-red-500' : 'border-gray-600'}`}
+                placeholder="Enter your full name"
+              />
+              {errors.name && (
+                <p className="mt-1 text-sm text-red-500">{errors.name}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block mb-2 text-sm font-medium text-gray-300">
+                Email Address
+              </label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                className={`w-full px-3 py-2 border rounded-lg bg-gray-700 text-white placeholder-gray-400
+                  ${errors.email ? 'border-red-500' : 'border-gray-600'}`}
+                placeholder="name@ucsi.ruh.ac.lk or name@dcs.ruh.ac.lk"
+              />
+              {errors.email && (
+                <p className="mt-1 text-sm text-red-500">{errors.email}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block mb-2 text-sm font-medium text-gray-300">
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  className={`w-full px-3 py-2 border rounded-lg bg-gray-700 text-white
+                    ${errors.password ? 'border-red-500' : 'border-gray-600'}`}
+                />
+                <button
+                  type="button"
+                  onClick={togglePasswordVisibility}
+                  className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-300 focus:outline-none"
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-5 h-5" aria-hidden="true" />
+                  ) : (
+                    <Eye className="w-5 h-5" aria-hidden="true" />
+                  )}
+                  <span className="sr-only">
+                    {showPassword ? 'Hide password' : 'Show password'}
+                  </span>
+                </button>
+              </div>
+              {formData.password && (
+                <div className="mt-2 space-y-2">
+                  <div className="flex gap-1">
+                    {[...Array(4)].map((_, i) => (
+                      <div
+                        key={i}
+                        className={`h-1 flex-1 rounded-full ${
+                          i < strength ? 'bg-blue-500' : 'bg-gray-600'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <ul className="space-y-1">
+                    <li className="text-sm flex items-center gap-2">
+                      {criteria.minLength ? (
+                        <Check className="w-4 h-4 text-green-500" />
+                      ) : (
+                        <X className="w-4 h-4 text-red-500" />
+                      )}
+                      <span className={criteria.minLength ? "text-green-500" : "text-red-500"}>
+                        At least 8 characters
+                      </span>
+                    </li>
+                    <li className="text-sm flex items-center gap-2">
+                      {criteria.hasUpper && criteria.hasLower ? (
+                        <Check className="w-4 h-4 text-green-500" />
+                      ) : (
+                        <X className="w-4 h-4 text-red-500" />
+                      )}
+                      <span className={criteria.hasUpper && criteria.hasLower ? "text-green-500" : "text-red-500"}>
+                        Upper & lowercase letters
+                      </span>
+                    </li>
+                    <li className="text-sm flex items-center gap-2">
+                      {criteria.hasSymbol ? (
+                        <Check className="w-4 h-4 text-green-500" />
+                      ) : (
+                        <X className="w-4 h-4 text-red-500" />
+                      )}
+                      <span className={criteria.hasSymbol ? "text-green-500" : "text-red-500"}>
+                        At least one symbol
+                      </span>
+                    </li>
+                  </ul>
+                </div>
+              )}
+              {errors.password && (
+                <p className="mt-1 text-sm text-red-500">{errors.password}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block mb-2 text-sm font-medium text-gray-300">
+                Confirm Password
+              </label>
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleInputChange}
+                  className={`w-full px-3 py-2 border rounded-lg bg-gray-700 text-white
+                    ${errors.confirmPassword ? 'border-red-500' : 'border-gray-600'}`}
+                />
+                <button
+                  type="button"
+                  onClick={toggleConfirmPasswordVisibility}
+                  className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-300 focus:outline-none"
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="w-5 h-5" aria-hidden="true" />
+                  ) : (
+                    <Eye className="w-5 h-5" aria-hidden="true" />
+                  )}
+                  <span className="sr-only">
+                    {showConfirmPassword ? 'Hide password' : 'Show password'}
+                  </span>
+                </button>
+              </div>
+              {errors.confirmPassword && (
+                <p className="mt-1 text-sm text-red-500">{errors.confirmPassword}</p>
+              )}
+            </div>
+
+            <div className="flex items-start">
+              <div className="flex items-center h-5">
+                <input
+                  type="checkbox"
+                  name="termsAccepted"
+                  checked={formData.termsAccepted}
+                  onChange={handleInputChange}
+                  className="w-4 h-4 rounded bg-gray-700 border-gray-600 text-blue-600 focus:ring-blue-500"
+                />
+              </div>
+              <label className="ml-2 text-sm text-gray-300">
+                I accept the{" "}
+                <a href="#" className="text-blue-500 hover:text-blue-400">
+                  Terms and Conditions
+                </a>
+              </label>
+            </div>
+            {errors.terms && (
+              <p className="text-sm text-red-500">{errors.terms}</p>
+            )}
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? (
+                <div className="flex items-center justify-center">
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Creating account...
+                </div>
+              ) : (
+                "Create account"
+              )}
+            </button>
+
+            <p className="text-sm text-center text-gray-400">
+              Already have an account?{" "}
+              <a href="/" className="text-blue-500 hover:text-blue-400">
+                Sign in
+              </a>
+            </p>
+          </form>
         </div>
-      </section>
-    </>
+      </div>
+    </section>
   );
 };

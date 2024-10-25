@@ -16,6 +16,7 @@ import "./index.css";
 import LiveChecking from "./routes/LiveChecking";
 import { StudentReport } from "./routes/StudentReport";
 import StudentSchedule from "./routes/StudentSchedule";
+import { ForgotPassword } from "./routes/ForgotPassword";
 const router = createBrowserRouter([
   {
     path: "/",
@@ -77,6 +78,10 @@ const router = createBrowserRouter([
       {
         path: "register",
         element: <Signup />,
+      },
+      {
+        path: "forgot-password",
+        element: <ForgotPassword />
       },
       {
         path: "logout",
