@@ -23,7 +23,7 @@ export const ForgotPassword = () => {
       setSuccess(true);
       // Navigate to reset password page (in real app, this would include a token)
       setTimeout(() => {
-        navigate('/reset-password');
+        navigate('/');
       }, 2000);
     } catch (error) {
       setError("Failed to process request. Please try again.");

@@ -14,7 +14,7 @@ export const Lecture_Home = () => {
   const [showCoursesTimes, setShowCoursesTimes] = useState(true);
   
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [checkedInStudents, setCheckedInStudents] = useState([]);
+
   const { sessionData, refreshSession } = useSession();
   const navigate = useNavigate();
   const location = useLocation();
@@ -83,9 +83,9 @@ export const Lecture_Home = () => {
 
         // Initialize SignalR connection
         await signalRService.startConnection();
-        signalRService.onNewCheckIn((attendanceInfo) => {
-          setCheckedInStudents((prev) => [...prev, attendanceInfo]);
-        });
+        // signalRService.onNewCheckIn((attendanceInfo) => {
+        //   setCheckedInStudents((prev) => [...prev, attendanceInfo]);
+        // });
       } catch (error) {
         console.error("Error fetching data or initializing SignalR:", error);
         setError("Failed to load data. Please try again later.");
@@ -212,19 +212,7 @@ export const Lecture_Home = () => {
                     {userEmail}
                   </span>
                 </div>
-                <ul
-                  class="py-1 text-gray-700 dark:text-gray-300"
-                  aria-labelledby="dropdown"
-                >
-                  <li>
-                    <a
-                      href="#"
-                      class="block py-2 px-4 text-sm hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-400 dark:hover:text-white"
-                    >
-                      My profile
-                    </a>
-                  </li>
-                </ul>
+                
 
                 <ul
                   class="py-1 text-gray-700 dark:text-gray-300"
