@@ -123,14 +123,6 @@ export const Student_Home = () => {
                 <strong className="text-blue-300">Course:</strong>{" "}
                 {checkInInfo.courseName}
               </p>
-              <p className="text-lg">
-                <strong className="text-blue-300">Start Time:</strong>{" "}
-                {formatToSriLankaTime(checkInInfo.startTime)}
-              </p>
-              <p className="text-lg">
-                <strong className="text-blue-300">End Time:</strong>{" "}
-                {formatToSriLankaTime(checkInInfo.endTime)}
-              </p>
             </div>
           </div>
         )}
